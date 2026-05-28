@@ -30,7 +30,6 @@ body {
     overflow:hidden;
     background:#13131f;
     box-shadow: 0 15px 35px rgba(0,0,0,0.5), 0 0 20px rgba(124, 58, 237, 0.05);
-    transition: box-shadow 0.4s ease;
 }
 
 /* Шапка */
@@ -44,13 +43,13 @@ body {
 }
 .header-left {display:flex; align-items:center; gap:12px}
 .logo-img {
-    height:38px; width:38px; object-fit:contain; 
-    border-radius:50%; border:1px solid #444;
+    height:38px; width:38px; 
+    object-fit: contain; /* Логотип помещается полностью */
+    border-radius:50%; border:1px solid #2d2d4e;
     background: #000;
-    box-shadow: 0 0 8px rgba(255,255,255,0.1);
 }
 .stamp {font-size:11px; color:#ef4444; letter-spacing:2px; text-transform:uppercase; font-weight:bold;}
-.header-date {font-size:12px; color:#888; font-family:monospace; letter-spacing: 1px;}
+.header-date {font-size:12px; color:#64748b; font-family:monospace; letter-spacing: 1px;}
 
 /* Выбор персонажа */
 .selector-row {display:flex; gap:10px; padding:14px 24px; border-bottom:1px solid #2d2d4e; flex-wrap:wrap; background:#0f0f1a}
@@ -59,8 +58,8 @@ body {
     cursor:pointer; background:transparent; color:#888; transition:all .2s ease; font-family:inherit;
     text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
 }
-.selector-btn:hover {border-color:#7c3aed; color:#fff; box-shadow: 0 0 10px rgba(124,58,237,0.2);}
-.selector-btn.active {background:#1e1040; border-color:#7c3aed; color:#c4b5fd; box-shadow: 0 0 12px rgba(124,58,237,0.4);}
+.selector-btn:hover {border-color:#7c3aed; color:#fff;}
+.selector-btn.active {background:#1e1040; border-color:#7c3aed; color:#c4b5fd; box-shadow: 0 0 12px rgba(124,58,237,0.3);}
 
 /* Профиль */
 .top-section {display:grid; grid-template-columns:180px 1fr; border-bottom:1px solid #2d2d4e}
@@ -70,19 +69,17 @@ body {
     padding:24px 16px; border-right:1px solid #2d2d4e;
 }
 .avatar-circle {
-    width:130px; height:130px; border-radius:50%; border:3px solid #7c3aed; 
+    width:130px; height:130px; border-radius:50%; border:2.5px solid #7c3aed; 
     overflow:hidden; display:flex; align-items:center; justify-content:center;
-    background: #000;
-    box-shadow: 0 0 15px rgba(124,58,237,0.3);
-    transition: border-color 0.4s, box-shadow 0.4s;
+    background: #09090e; /* Стильный темный фон, если пропорции фото отличаются */
+    box-shadow: 0 0 15px rgba(124,58,237,0.25);
+    transition: border-color 0.4s;
 }
 .avatar-circle img {
     width:100%; height:100%; 
-    object-fit:contain; /* Картинка помещается полностью */
-    transform: scale(0.95); /* Небольшой отступ от краев круга */
-    display:block; transition: transform 0.3s;
+    object-fit: contain; /* Профиль помещается полностью и не обрезается */
+    display:block;
 }
-.avatar-circle:hover img {transform: scale(1.02);}
 
 .id-section {padding:24px; display:flex; flex-direction:column; justify-content: center; gap:14px}
 .char-name {font-size:32px; font-weight:600; color:#f8fafc; letter-spacing: 0.5px;}
@@ -90,14 +87,14 @@ body {
 .meta-item {display:flex; flex-direction:column; gap:4px}
 .meta-label {font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:1px}
 .meta-value {font-size:14px; color:#cbd5e1; font-weight:500}
+.traits-row {display:flex; gap:8px; flex-wrap:wrap; margin-top:2px}
 
 /* Трейты - бэйджи */
-.traits-row {display:flex; gap:8px; flex-wrap:wrap; margin-top:2px}
 .trait-badge {
     font-size:11px; padding:4px 14px; border-radius:20px; border:1px solid; 
     cursor:pointer; transition:all .2s; user-select:none; font-weight: 500;
 }
-.trait-badge:hover {transform: translateY(-2px); filter: brightness(1.2);}
+.trait-badge:hover {transform: translateY(-1px); filter: brightness(1.2);}
 .trait-purple {border-color:#7c3aed; color:#c4b5fd; background:rgba(30,16,64,0.6)}
 .trait-green {border-color:#16a34a; color:#86efac; background:rgba(5,46,22,0.6)}
 .trait-orange {border-color:#ea580c; color:#fdba74; background:rgba(67,20,7,0.6)}
@@ -122,7 +119,6 @@ body {
     margin-bottom:12px; display:flex; align-items:center; gap:8px;
 }
 .section-title::before {content:''; display:block; width:4px; height:12px; background:#7c3aed; border-radius:2px;}
-
 .bg-text {font-size:14px; color:#cbd5e1; line-height:1.7; text-align: justify;}
 
 /* Статы */
@@ -135,24 +131,24 @@ body {
 }
 .stat-zero-line {
     position:absolute; left:50%; top:-4px; bottom:-4px; width:2px; 
-    background:#64748b; z-index:2; transform:translateX(-50%); border-radius:1px;
+    background:#475569; z-index:2; transform:translateX(-50%); border-radius:1px;
 }
 .stat-bar {height:100%; border-radius:3px; position:absolute; top:0; transition:width .6s cubic-bezier(0.4, 0, 0.2, 1)}
 .stat-bar.pos {left:50%; box-shadow: -2px 0 8px inset rgba(0,0,0,0.2);}
 .stat-bar.neg {right:50%; box-shadow: 2px 0 8px inset rgba(0,0,0,0.2);}
 .stat-val {font-size:14px; font-weight:700; width:36px; text-align:right; font-family:monospace;}
 
-/* Правая колонка (Радар с эффектом матового стекла) */
+/* Правая колонка (Радар с Glass Effect) */
 .right-col {
     padding:24px 16px; display:flex; flex-direction:column; gap:16px; 
     align-items:center; justify-content: flex-start;
-    background: rgba(30, 30, 46, 0.25);
-    backdrop-filter: blur(12px);
+    background: rgba(22, 22, 39, 0.45); /* Полупрозрачный фон */
+    backdrop-filter: blur(12px); /* Эффект матового стекла */
     -webkit-backdrop-filter: blur(12px);
-    box-shadow: inset 0px 0px 40px rgba(0,0,0,0.4);
-    position: relative;
+    border-left: 1px solid rgba(255, 255, 255, 0.03);
+    box-shadow: inset 0px 0px 30px rgba(0, 0, 0, 0.4);
 }
-canvas {display:block; margin-top: 10px; z-index: 2;}
+canvas {display:block; margin-top: 10px;}
 
 /* Трейты - описание */
 .trait-block {
@@ -182,7 +178,7 @@ canvas {display:block; margin-top: 10px; z-index: 2;}
 <div class="dossier" id="dossier-box">
   <div class="header-bar">
     <div class="header-left">
-      <img class="logo-img" src="logo.jpg" alt="logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'38\' height=\'38\' fill=\'%23444\'><rect width=\'38\' height=\'38\' fill=\'%23111\'/></svg>'">
+      <img class="logo-img" src="logo.jpg" alt="logo">
       <span class="stamp">&#11041; Личное дело &#8212; Секретно</span>
     </div>
     <span class="header-date" id="doc-date">02/02/2026</span>
@@ -246,7 +242,6 @@ canvas {display:block; margin-top: 10px; z-index: 2;}
 </div>
 
 <script>
-// Важно: Имена файлов должны быть на английском без спецсимволов для работы на GitHub
 const chars = [
   {
     name:"Азирет", color:"#7c3aed", img:"aziret.png", date:"02/02/2026", faction:"Культ Хаоса",
@@ -268,7 +263,7 @@ const chars = [
     motiv:"Доказать собственную независимость. Не нуждается в признании.", links:"Азирет — временный союзник. Танай — неизвестно.",
     traitBlocks:[
       {title:"Деструктивный Коэффициент",cls:"orange",titleColor:"#fdba74",desc:"Искажение вероятностей, при котором любая система начинает вести себя так, словно ожидает худшего исхода. Чем сильнее влияние — тем ниже точность действий."},
-      {title:"Независтливый",cls:"green",titleColor:"#86efac",desc:"Не считает чужие достижения значимыми. То, что обычно вызывает зависть, для него лишено веса и смысла — позволяет действовать без оглядки на чужие успехи."}
+      {title:"Независтливый",cls:"green",titleColor:"#86efac",desc:"Не считает чужие достижения значимыми. То, что обычно вызывает зависть, для него воплощает пустоту — позволяет действовать без оглядки на чужие успехи."}
     ],
     footerNote:"Уровень риска: критический", id:"ID: DYR-002"
   },
@@ -306,12 +301,11 @@ function loadChar(i) {
   
   const avatar = document.getElementById("char-avatar");
   avatar.style.borderColor = c.color;
-  avatar.style.boxShadow = `0 0 15px ${c.color}40`;
+  avatar.style.boxShadow = `0 0 15px ${c.color}35`;
   
   document.styleSheets[0].insertRule(`.section-title::before { background: ${c.color} !important; }`, document.styleSheets[0].cssRules.length);
 
   document.getElementById("char-name").textContent = c.name;
-  // Поле с классом удалено
   document.getElementById("char-faction").textContent = c.faction;
   document.getElementById("char-traits").innerHTML = c.traits.map(t =>
     `<span class="trait-badge ${t.cls}" onclick="goToTrait(${t.idx})">${t.label}</span>`
@@ -362,11 +356,11 @@ function drawRadar(c) {
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0,0,w,h);
   
-  const cx = w/2, cy = h/2, R = 100;
+  const cx = w/2, cy = h/2, R = 100; 
   const n = c.stats.length;
   const angles = c.stats.map((_,i) => -Math.PI/2 + (2*Math.PI/n)*i);
   
-  // Рисуем сетку, пропуская центр (v=-5)
+  // Отрисовка кругов сетки (четкая, без выделения 0 отметки)
   for(let v = -4; v <= 5; v++) {
     const r = (v+5)/10;
     ctx.beginPath();
@@ -376,22 +370,21 @@ function drawRadar(c) {
     });
     ctx.closePath();
     
-    // Единый стиль линий - толстой отметки 0 больше нет
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255,255,255,0.07)";
+    ctx.lineWidth = 0.8;
     ctx.stroke();
   }
   
-  // Рисуем оси
+  // Рисуем оси параметров
   angles.forEach(a => {
     ctx.beginPath(); ctx.moveTo(cx,cy);
     ctx.lineTo(cx + Math.cos(a)*R, cy + Math.sin(a)*R);
-    ctx.strokeStyle = "rgba(255,255,255,0.1)"; 
-    ctx.lineWidth = 1; 
+    ctx.strokeStyle = "rgba(255,255,255,0.12)"; 
+    ctx.lineWidth = 0.8; 
     ctx.stroke();
   });
   
-  // Рисуем фигуру характеристик (стеклянный эффект)
+  // Рисуем фигуру характеристик (чистый, четкий неоновый полигон)
   ctx.beginPath();
   c.stats.forEach((s,i) => {
     const r = (s.val+5)/10;
@@ -400,19 +393,19 @@ function drawRadar(c) {
   });
   ctx.closePath();
   
-  // Заливка с неоновой тенью
+  // Мягкое внутреннее свечение фигуры
   ctx.shadowColor = c.color;
-  ctx.shadowBlur = 12;
-  ctx.fillStyle = c.color + "4D"; // Прозрачная заливка
+  ctx.shadowBlur = 10;
+  ctx.fillStyle = c.color + "33"; // 20% непрозрачности
   ctx.fill();
   
   ctx.strokeStyle = c.color; 
   ctx.lineWidth = 2.5;
   ctx.stroke();
   
-  ctx.shadowBlur = 0;
+  ctx.shadowBlur = 0; // Сброс теней
   
-  // Рисуем точки на углах фигуры (белые точки убраны)
+  // Рисуем сплошные цветные точки на углах (без белых центров)
   c.stats.forEach((s,i) => {
     const r = (s.val+5)/10;
     const x = cx + Math.cos(angles[i])*R*r, y = cy + Math.sin(angles[i])*R*r;
@@ -420,7 +413,7 @@ function drawRadar(c) {
     ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fill();
   });
   
-  // Текст (Названия характеристик)
+  // Подписи характеристик (Высокая четкость)
   ctx.fillStyle = "rgba(241, 245, 249, 0.95)";
   ctx.font = "bold 11px -apple-system, sans-serif";
   ctx.textAlign = "center";
