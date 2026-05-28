@@ -10,7 +10,6 @@
 body {
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background-color: #0b0b12;
-    /* Легкая фоновая сетка для стиля */
     background-image: linear-gradient(rgba(45, 45, 78, 0.1) 1px, transparent 1px),
     linear-gradient(90deg, rgba(45, 45, 78, 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
@@ -45,8 +44,9 @@ body {
 }
 .header-left {display:flex; align-items:center; gap:12px}
 .logo-img {
-    height:38px; width:38px; object-fit:cover; 
+    height:38px; width:38px; object-fit:contain; 
     border-radius:50%; border:1px solid #444;
+    background: #000;
     box-shadow: 0 0 8px rgba(255,255,255,0.1);
 }
 .stamp {font-size:11px; color:#ef4444; letter-spacing:2px; text-transform:uppercase; font-weight:bold;}
@@ -72,22 +72,27 @@ body {
 .avatar-circle {
     width:130px; height:130px; border-radius:50%; border:3px solid #7c3aed; 
     overflow:hidden; display:flex; align-items:center; justify-content:center;
+    background: #000;
     box-shadow: 0 0 15px rgba(124,58,237,0.3);
     transition: border-color 0.4s, box-shadow 0.4s;
 }
-.avatar-circle img {width:100%; height:100%; object-fit:cover; display:block; transition: transform 0.3s;}
-.avatar-circle:hover img {transform: scale(1.05);}
+.avatar-circle img {
+    width:100%; height:100%; 
+    object-fit:contain; /* Картинка помещается полностью */
+    transform: scale(0.95); /* Небольшой отступ от краев круга */
+    display:block; transition: transform 0.3s;
+}
+.avatar-circle:hover img {transform: scale(1.02);}
 
-.id-section {padding:24px; display:flex; flex-direction:column; justify-content: center; gap:12px}
+.id-section {padding:24px; display:flex; flex-direction:column; justify-content: center; gap:14px}
 .char-name {font-size:32px; font-weight:600; color:#f8fafc; letter-spacing: 0.5px;}
-.char-class {font-size:12px; color:#a78bfa; letter-spacing:1px; font-family:monospace}
-.meta-row {display:flex; gap:24px; margin-top:4px; flex-wrap:wrap}
+.meta-row {display:flex; gap:24px; margin-top:0px; flex-wrap:wrap}
 .meta-item {display:flex; flex-direction:column; gap:4px}
 .meta-label {font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:1px}
 .meta-value {font-size:14px; color:#cbd5e1; font-weight:500}
 
 /* Трейты - бэйджи */
-.traits-row {display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
+.traits-row {display:flex; gap:8px; flex-wrap:wrap; margin-top:2px}
 .trait-badge {
     font-size:11px; padding:4px 14px; border-radius:20px; border:1px solid; 
     cursor:pointer; transition:all .2s; user-select:none; font-weight: 500;
@@ -110,7 +115,7 @@ body {
 .tab.active {color:#a78bfa; border-bottom-color:#7c3aed; text-shadow: 0 0 8px rgba(167,139,250,0.4);}
 
 /* Основной контент */
-.main-content {display:grid; grid-template-columns:1fr 310px}
+.main-content {display:grid; grid-template-columns:1fr 320px}
 .left-col {padding:24px; border-right:1px solid #2d2d4e; display:flex; flex-direction:column; gap:16px}
 .section-title {
     font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#64748b; 
@@ -137,13 +142,17 @@ body {
 .stat-bar.neg {right:50%; box-shadow: 2px 0 8px inset rgba(0,0,0,0.2);}
 .stat-val {font-size:14px; font-weight:700; width:36px; text-align:right; font-family:monospace;}
 
-/* Правая колонка (Радар) */
+/* Правая колонка (Радар с эффектом матового стекла) */
 .right-col {
     padding:24px 16px; display:flex; flex-direction:column; gap:16px; 
-    background:radial-gradient(circle at center, #13131f 0%, #0f0f1a 100%); 
     align-items:center; justify-content: flex-start;
+    background: rgba(30, 30, 46, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0px 0px 40px rgba(0,0,0,0.4);
+    position: relative;
 }
-canvas {display:block; margin-top: 10px;}
+canvas {display:block; margin-top: 10px; z-index: 2;}
 
 /* Трейты - описание */
 .trait-block {
@@ -173,8 +182,7 @@ canvas {display:block; margin-top: 10px;}
 <div class="dossier" id="dossier-box">
   <div class="header-bar">
     <div class="header-left">
-      <!-- Загружаем логотип напрямую -->
-      <img class="logo-img" src="Логотип.jpg" alt="logo">
+      <img class="logo-img" src="logo.jpg" alt="logo" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'38\' height=\'38\' fill=\'%23444\'><rect width=\'38\' height=\'38\' fill=\'%23111\'/></svg>'">
       <span class="stamp">&#11041; Личное дело &#8212; Секретно</span>
     </div>
     <span class="header-date" id="doc-date">02/02/2026</span>
@@ -194,7 +202,6 @@ canvas {display:block; margin-top: 10px;}
     </div>
     <div class="id-section">
       <div class="char-name" id="char-name"></div>
-      <div class="char-class" id="char-class"></div>
       <div class="meta-row">
         <div class="meta-item">
           <span class="meta-label">Фракция</span>
@@ -228,7 +235,6 @@ canvas {display:block; margin-top: 10px;}
     
     <div class="right-col">
       <div class="section-title">Радар Анализ</div>
-      <!-- Увеличенный размер канваса для лучшей видимости -->
       <canvas id="radarCanvas" width="280" height="280"></canvas>
     </div>
   </div>
@@ -240,10 +246,10 @@ canvas {display:block; margin-top: 10px;}
 </div>
 
 <script>
-// Данные персонажей со ссылками на локальные файлы
+// Важно: Имена файлов должны быть на английском без спецсимволов для работы на GitHub
 const chars = [
   {
-    name:"Азирет", color:"#7c3aed", img:"Азирет(Профиль).png", date:"02/02/2026", classLabel:"[Лидер Культа] · [Вексель]", faction:"Культ Хаоса",
+    name:"Азирет", color:"#7c3aed", img:"aziret.png", date:"02/02/2026", faction:"Культ Хаоса",
     traits:[{label:"Лидер Культа",cls:"trait-purple",idx:0},{label:"Вексель",cls:"trait-green",idx:1}],
     stats:[{name:"Адекватность",val:2,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:3,color:"#f472b6"},{name:"Орешки",val:-1,color:"#34d399"},{name:"Стойкость",val:0,color:"#fbbf24"},{name:"Убеждение",val:2,color:"#fb923c"}],
     bg:"Вырос в закрытой общине, где с детства учился управлять вниманием толпы. Рано понял, что слова важнее кулаков. Не имеет фиксированных убеждений — только интерес к влиянию и хаосу.",
@@ -255,7 +261,7 @@ const chars = [
     footerNote:"Уровень риска: высокий", id:"ID: AZR-001"
   },
   {
-    name:"Дияр", color:"#ea580c", img:"Дияр(Профиль).jpg", date:"03/02/2026", classLabel:"[Независтливый] · [Деструктивный Коэффициент]", faction:"Независимый",
+    name:"Дияр", color:"#ea580c", img:"diyar.jpg", date:"03/02/2026", faction:"Независимый",
     traits:[{label:"Независтливый",cls:"trait-green",idx:0},{label:"Деструктивный К.",cls:"trait-orange",idx:1}],
     stats:[{name:"Адекватность",val:1,color:"#a78bfa"},{name:"Скилл",val:2,color:"#60a5fa"},{name:"Интрига",val:-1,color:"#f472b6"},{name:"Орешки",val:-5,color:"#34d399"},{name:"Стойкость",val:-2,color:"#fbbf24"},{name:"Убеждение",val:-1,color:"#fb923c"}],
     bg:"Бывший аналитик, разочаровавшийся в системе. Не признаёт чужих успехов значимыми — это даёт ему холодный взгляд на мир. Действует методично, но часто ожидает худшего исхода.",
@@ -267,7 +273,7 @@ const chars = [
     footerNote:"Уровень риска: критический", id:"ID: DYR-002"
   },
   {
-    name:"Танай", color:"#16a34a", img:"Танай(Профиль).jpg", date:"04/02/2026", classLabel:"[Aide-de-camp] · [Утёнок]", faction:"Порядок",
+    name:"Танай", color:"#16a34a", img:"tanay.jpg", date:"04/02/2026", faction:"Порядок",
     traits:[{label:"Aide-de-camp",cls:"trait-green",idx:0},{label:"Утёнок",cls:"trait-blue",idx:1}],
     stats:[{name:"Адекватность",val:3,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:0,color:"#f472b6"},{name:"Орешки",val:2,color:"#34d399"},{name:"Стойкость",val:0,color:"#fbbf24"},{name:"Убеждение",val:3,color:"#fb923c"}],
     bg:"Происходит из семьи военных администраторов. С детства обучена действовать в рамках системы. Внутреннее равновесие — её главный инструмент влияния.",
@@ -295,7 +301,6 @@ function loadChar(i) {
   document.querySelectorAll(".selector-btn").forEach((b,idx) => b.classList.toggle("active", idx===i));
   const c = chars[i];
   
-  // Обновление стилей и контента под персонажа
   document.getElementById("doc-date").textContent = c.date;
   document.getElementById("char-img").src = c.img;
   
@@ -306,7 +311,7 @@ function loadChar(i) {
   document.styleSheets[0].insertRule(`.section-title::before { background: ${c.color} !important; }`, document.styleSheets[0].cssRules.length);
 
   document.getElementById("char-name").textContent = c.name;
-  document.getElementById("char-class").textContent = c.classLabel;
+  // Поле с классом удалено
   document.getElementById("char-faction").textContent = c.faction;
   document.getElementById("char-traits").innerHTML = c.traits.map(t =>
     `<span class="trait-badge ${t.cls}" onclick="goToTrait(${t.idx})">${t.label}</span>`
@@ -357,12 +362,12 @@ function drawRadar(c) {
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0,0,w,h);
   
-  const cx = w/2, cy = h/2, R = 100; // Радиус чуть уменьшен, чтобы влезли крупные лейблы
+  const cx = w/2, cy = h/2, R = 100;
   const n = c.stats.length;
   const angles = c.stats.map((_,i) => -Math.PI/2 + (2*Math.PI/n)*i);
   
-  // Рисуем сетку (паутину)
-  for(let v = -5; v <= 5; v++) {
+  // Рисуем сетку, пропуская центр (v=-5)
+  for(let v = -4; v <= 5; v++) {
     const r = (v+5)/10;
     ctx.beginPath();
     angles.forEach((a,i) => {
@@ -371,14 +376,9 @@ function drawRadar(c) {
     });
     ctx.closePath();
     
-    // Улучшенная видимость сетки
-    if (v === 0) {
-      ctx.strokeStyle = "rgba(255,255,255,0.4)";
-      ctx.lineWidth = 1.5;
-    } else {
-      ctx.strokeStyle = "rgba(255,255,255,0.08)";
-      ctx.lineWidth = 0.8;
-    }
+    // Единый стиль линий - толстой отметки 0 больше нет
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 1;
     ctx.stroke();
   }
   
@@ -386,12 +386,12 @@ function drawRadar(c) {
   angles.forEach(a => {
     ctx.beginPath(); ctx.moveTo(cx,cy);
     ctx.lineTo(cx + Math.cos(a)*R, cy + Math.sin(a)*R);
-    ctx.strokeStyle = "rgba(255,255,255,0.15)"; 
+    ctx.strokeStyle = "rgba(255,255,255,0.1)"; 
     ctx.lineWidth = 1; 
     ctx.stroke();
   });
   
-  // Рисуем фигуру характеристик
+  // Рисуем фигуру характеристик (стеклянный эффект)
   ctx.beginPath();
   c.stats.forEach((s,i) => {
     const r = (s.val+5)/10;
@@ -400,50 +400,38 @@ function drawRadar(c) {
   });
   ctx.closePath();
   
-  // Эффект свечения заливки
+  // Заливка с неоновой тенью
   ctx.shadowColor = c.color;
-  ctx.shadowBlur = 15;
-  ctx.fillStyle = c.color + "4D"; // 30% прозрачность
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = c.color + "4D"; // Прозрачная заливка
   ctx.fill();
   
-  // Обводка фигуры
   ctx.strokeStyle = c.color; 
   ctx.lineWidth = 2.5;
   ctx.stroke();
   
-  // Сбрасываем тень для точек и текста
   ctx.shadowBlur = 0;
   
-  // Рисуем точки на углах фигуры
+  // Рисуем точки на углах фигуры (белые точки убраны)
   c.stats.forEach((s,i) => {
     const r = (s.val+5)/10;
     const x = cx + Math.cos(angles[i])*R*r, y = cy + Math.sin(angles[i])*R*r;
-    
-    // Внешняя цветная точка
     ctx.fillStyle = c.color;
     ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fill();
-    
-    // Внутренняя белая точка для стиля
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath(); ctx.arc(x,y,1.5,0,Math.PI*2); ctx.fill();
   });
   
-  // Текст (Названия характеристик) - Улучшена видимость
+  // Текст (Названия характеристик)
   ctx.fillStyle = "rgba(241, 245, 249, 0.95)";
   ctx.font = "bold 11px -apple-system, sans-serif";
   ctx.textAlign = "center";
   c.stats.forEach((s,i) => {
     const a = angles[i];
-    // Смещение текста наружу
     const x = cx + Math.cos(a)*(R+22);
     const y = cy + Math.sin(a)*(R+22);
     ctx.fillText(s.name, x, y+4);
   });
-  
-  // Ноль в центре убран, как вы и просили
 }
 
-// Загружаем первого персонажа по умолчанию
 loadChar(0);
 </script>
 </body>
