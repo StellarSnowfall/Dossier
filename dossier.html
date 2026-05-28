@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Досье персонажей</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f1a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 24px 16px; }
+  .dossier { width: 100%; max-width: 700px; border: 1px solid #2d2d4e; border-radius: 12px; overflow: hidden; background: #13131f; }
+  .header-bar { background: #0a0a14; padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d2d4e; }
+  .header-bar .stamp { font-size: 11px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; }
+  .header-bar .date { font-size: 11px; color: #444; font-family: monospace; }
+  .selector-row { display: flex; gap: 8px; padding: 12px 18px; border-bottom: 1px solid #2d2d4e; flex-wrap: wrap; background: #0f0f1a; }
+  .selector-btn { font-size: 12px; padding: 5px 16px; border-radius: 20px; border: 1px solid #2d2d4e; cursor: pointer; background: transparent; color: #888; transition: all 0.15s; font-family: inherit; }
+  .selector-btn:hover { border-color: #555; color: #ccc; }
+  .selector-btn.active { background: #1e1040; border-color: #7c3aed; color: #c4b5fd; }
+  .top-section { display: grid; grid-template-columns: 140px 1fr; border-bottom: 1px solid #2d2d4e; }
+  .photo-area { background: #0a0a14; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 12px; gap: 10px; border-right: 1px solid #2d2d4e; }
+  .avatar-circle { width: 80px; height: 80px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 500; }
+  .status-badge { font-size: 10px; padding: 3px 12px; border-radius: 20px; letter-spacing: 0.5px; font-weight: 500; }
+  .status-active { background: #14532d; color: #86efac; }
+  .status-sus { background: #451a03; color: #fdba74; }
+  .id-section { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .char-name { font-size: 26px; font-weight: 500; color: #f1f5f9; }
+  .char-class { font-size: 11px; color: #a78bfa; letter-spacing: 0.5px; font-family: monospace; }
+  .meta-row { display: flex; gap: 18px; margin-top: 4px; flex-wrap: wrap; }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+  .meta-value { font-size: 13px; color: #cbd5e1; font-weight: 500; }
+  .traits-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .trait-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid; }
+  .trait-purple { border-color: #7c3aed; color: #c4b5fd; background: #1e1040; }
+  .trait-green { border-color: #16a34a; color: #86efac; background: #052e16; }
+  .trait-orange { border-color: #ea580c; color: #fdba74; background: #431407; }
+  .trait-blue { border-color: #2563eb; color: #93c5fd; background: #0c1a3a; }
+  .tab-row { display: flex; gap: 0; border-bottom: 1px solid #2d2d4e; padding: 0 18px; background: #0f0f1a; }
+  .tab { font-size: 12px; padding: 10px 14px; cursor: pointer; color: #555; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; transition: color 0.15s; }
+  .tab:hover { color: #888; }
+  .tab.active { color: #a78bfa; border-bottom-color: #7c3aed; }
+  .main-content { display: grid; grid-template-columns: 1fr 200px; }
+  .left-col { padding: 18px; border-right: 1px solid #2d2d4e; display: flex; flex-direction: column; gap: 16px; }
+  .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #444; margin-bottom: 8px; }
+  .bg-text { font-size: 13px; color: #94a3b8; line-height: 1.65; }
+  .stat-rows { display: flex; flex-direction: column; gap: 8px; }
+  .stat-row { display: flex; align-items: center; gap: 10px; }
+  .stat-name { font-size: 12px; color: #64748b; width: 95px; flex-shrink: 0; }
+  .stat-bar-wrap { flex: 1; height: 5px; background: #1e293b; border-radius: 3px; overflow: hidden; }
+  .stat-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .stat-val { font-size: 12px; font-weight: 500; color: #cbd5e1; width: 28px; text-align: right; }
+  .right-col { padding: 18px 14px; display: flex; flex-direction: column; gap: 14px; background: #0f0f1a; }
+  .trait-block { background: #0f0f1a; border-radius: 8px; padding: 10px 12px; border-left: 3px solid; margin-bottom: 10px; }
+  .trait-block.purple { border-color: #7c3aed; }
+  .trait-block.orange { border-color: #ea580c; }
+  .trait-block.green { border-color: #16a34a; }
+  .trait-block.blue { border-color: #2563eb; }
+  .trait-title { font-size: 11px; font-weight: 500; margin-bottom: 4px; font-family: monospace; }
+  .trait-desc { font-size: 11px; color: #64748b; line-height: 1.55; }
+  .footer-bar { background: #0a0a14; border-top: 1px solid #2d2d4e; padding: 8px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .footer-note { font-size: 11px; color: #444; }
+  .footer-id { font-size: 11px; font-family: monospace; color: #444; }
+  canvas { display: block; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="dossier">
+  <div class="header-bar">
+    <span class="stamp">⬡ Личное дело — Секретно</span>
+    <span class="date" id="doc-date">02/02/2026</span>
+  </div>
+
+  <div class="selector-row">
+    <button class="selector-btn active" onclick="loadChar(0)">Азирет</button>
+    <button class="selector-btn" onclick="loadChar(1)">Дияр</button>
+    <button class="selector-btn" onclick="loadChar(2)">Танай</button>
+  </div>
+
+  <div class="top-section">
+    <div class="photo-area">
+      <div class="avatar-circle" id="char-avatar">АЗ</div>
+      <span class="status-badge status-active" id="char-status">● Активен</span>
+    </div>
+    <div class="id-section">
+      <div class="char-name" id="char-name">Азирет</div>
+      <div class="char-class" id="char-class">[Лидер Культа] · [Вексель]</div>
+      <div class="meta-row">
+        <div class="meta-item"><span class="meta-label">Возраст</span><span class="meta-value" id="char-age">28</span></div>
+        <div class="meta-item"><span class="meta-label">Пол</span><span class="meta-value" id="char-gender">Муж.</span></div>
+        <div class="meta-item"><span class="meta-label">Фракция</span><span class="meta-value" id="char-faction">Культ Хаоса</span></div>
+        <div class="meta-item"><span class="meta-label">Опасность</span><span class="meta-value" id="char-danger" style="color:#f87171">★★★☆☆</span></div>
+      </div>
+      <div class="traits-row" id="char-traits">
+        <span class="trait-badge trait-purple">[Лидер Культа]</span>
+        <span class="trait-badge trait-green">[Вексель]</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('stats', this)">Характеристики</button>
+    <button class="tab" onclick="switchTab('bio', this)">Бэкграунд</button>
+    <button class="tab" onclick="switchTab('traits', this)">Трейты</button>
+  </div>
+
+  <div class="main-content">
+    <div class="left-col">
+      <div id="tab-stats">
+        <div class="section-title">Базовые показатели</div>
+        <div class="stat-rows" id="stat-rows"></div>
+      </div>
+      <div id="tab-bio" class="hidden">
+        <div>
+          <div class="section-title">Личный бэкграунд</div>
+          <div class="bg-text" id="char-bg"></div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="section-title">Мотивация</div>
+          <div class="bg-text" id="char-motiv"></div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="section-title">Связи</div>
+          <div class="bg-text" id="char-links"></div>
+        </div>
+      </div>
+      <div id="tab-traits" class="hidden"></div>
+    </div>
+    <div class="right-col">
+      <div class="section-title">Радар</div>
+      <canvas id="radarCanvas" width="180" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="footer-bar">
+    <span class="footer-note" id="footer-note">Досье сформировано</span>
+    <span class="footer-id" id="footer-id">ID: AZR-001</span>
+  </div>
+</div>
+
+<script>
+const chars = [
+  {
+    name: "Азирет", initials: "АЗ", color: "#7c3aed",
+    date: "02/02/2026", status: "● Активен", statusClass: "status-active",
+    classLabel: "[Лидер Культа] · [Вексель]",
+    age: 28, gender: "Муж.", faction: "Культ Хаоса", danger: "★★★☆☆", dangerColor: "#f87171",
+    traits: [{label: "[Лидер Культа]", cls: "trait-purple"}, {label: "[Вексель]", cls: "trait-green"}],
+    stats: [
+      {name: "Адекватность", val: 65, color: "#a78bfa"},
+      {name: "Скилл", val: 55, color: "#60a5fa"},
+      {name: "Интрига", val: 80, color: "#f472b6"},
+      {name: "Орешки", val: 45, color: "#34d399"},
+      {name: "Стойкость", val: 50, color: "#fbbf24"},
+      {name: "Убеждение", val: 70, color: "#fb923c"},
+    ],
+    bg: "Вырос в закрытой общине, где с детства учился управлять вниманием толпы. Рано понял, что слова важнее кулаков. Не имеет фиксированных убеждений — только интерес к влиянию и хаосу.",
+    motiv: "Развлечение, влияние, отсутствие скуки. Долгосрочных целей нет.",
+    links: "Дияр — союзник по расчёту. Танай — объект манипуляций.",
+    traitBlocks: [
+      {title: "[Лидер Культа]", cls: "purple", titleColor: "#c4b5fd", desc: "Способен воздействовать на разум человека. Формирует вокруг себя круг людей, которые перенимают его оценки и решения как ориентир. Не имеет точной цели или мотивации."},
+      {title: "[Вексель]", cls: "green", titleColor: "#86efac", desc: "Добровольно принятый обет долга, ставший внутренней мерой ответственности. Служит скрытым ориентиром, влияющим на решения и поступки носителя."},
+    ],
+    footerNote: "Уровень риска: высокий", id: "ID: AZR-001"
+  },
+  {
+    name: "Дияр", initials: "ДИ", color: "#ea580c",
+    date: "03/02/2026", status: "⚠ Подозреваемый", statusClass: "status-sus",
+    classLabel: "[Независтливый] · [Деструктивный Коэффициент]",
+    age: 34, gender: "Муж.", faction: "Независимый", danger: "★★★★☆", dangerColor: "#fb923c",
+    traits: [{label: "[Независтливый]", cls: "trait-green"}, {label: "[Деструктивный К.]", cls: "trait-orange"}],
+    stats: [
+      {name: "Адекватность", val: 55, color: "#a78bfa"},
+      {name: "Скилл", val: 70, color: "#60a5fa"},
+      {name: "Интрига", val: 40, color: "#f472b6"},
+      {name: "Орешки", val: 20, color: "#34d399"},
+      {name: "Стойкость", val: 35, color: "#fbbf24"},
+      {name: "Убеждение", val: 45, color: "#fb923c"},
+    ],
+    bg: "Бывший аналитик, разочаровавшийся в системе. Не признаёт чужих успехов значимыми — это даёт ему холодный взгляд на мир. Действует методично, но часто ожидает худшего исхода.",
+    motiv: "Доказать собственную независимость. Не нуждается в признании.",
+    links: "Азирет — временный союзник. Танай — неизвестно.",
+    traitBlocks: [
+      {title: "[Деструктивный Коэффициент]", cls: "orange", titleColor: "#fdba74", desc: "Искажение вероятностей, при котором любая система начинает вести себя так, словно ожидает худшего исхода. Чем сильнее влияние — тем ниже точность действий."},
+      {title: "[Независтливый]", cls: "green", titleColor: "#86efac", desc: "Не считает чужие достижения значимыми. То, что обычно вызывает зависть, для него лишено веса и смысла — позволяет действовать без оглядки на чужие успехи."},
+    ],
+    footerNote: "Уровень риска: очень высокий", id: "ID: DYR-002"
+  },
+  {
+    name: "Танай", initials: "ТА", color: "#16a34a",
+    date: "04/02/2026", status: "● Активен", statusClass: "status-active",
+    classLabel: "[Aide-de-camp] · [Утёнок]",
+    age: 22, gender: "Жен.", faction: "Порядок", danger: "★★☆☆☆", dangerColor: "#86efac",
+    traits: [{label: "[Aide-de-camp]", cls: "trait-green"}, {label: "[Утёнок]", cls: "trait-blue"}],
+    stats: [
+      {name: "Адекватность", val: 75, color: "#a78bfa"},
+      {name: "Скилл", val: 60, color: "#60a5fa"},
+      {name: "Интрига", val: 45, color: "#f472b6"},
+      {name: "Орешки", val: 65, color: "#34d399"},
+      {name: "Стойкость", val: 55, color: "#fbbf24"},
+      {name: "Убеждение", val: 70, color: "#fb923c"},
+    ],
+    bg: "Происходит из семьи военных администраторов. С детства обучена действовать в рамках системы. Внутреннее равновесие — её главный инструмент влияния.",
+    motiv: "Поддерживать устойчивость системы вокруг себя. Лояльность как ценность.",
+    links: "Азирет — объект наблюдения. Дияр — неизвестно.",
+    traitBlocks: [
+      {title: "[Aide-de-camp]", cls: "green", titleColor: "#86efac", desc: "Занимает ключевую позицию, действуя в соответствии с высшим порядком. Внутреннее равновесие делает её слова весомыми и позволяет сохранять устойчивость, не поддаваясь хаосу."},
+      {title: "[Утёнок]", cls: "blue", titleColor: "#93c5fd", desc: "Иррациональный зов позволяет внутреннему хаосу выйти наружу, действуя на чистом импульсе. Контроль носителя снижается, что делает его более склонным к риску."},
+    ],
+    footerNote: "Уровень риска: средний", id: "ID: TNY-003"
+  }
+];
+
+let currentTab = "stats";
+
+function loadChar(i) {
+  document.querySelectorAll('.selector-btn').forEach((b, idx) => b.classList.toggle('active', idx === i));
+  const c = chars[i];
+  document.getElementById('doc-date').textContent = c.date;
+  const av = document.getElementById('char-avatar');
+  av.textContent = c.initials;
+  av.style.background = c.color + '22';
+  av.style.borderColor = c.color;
+  av.style.color = c.color;
+  const st = document.getElementById('char-status');
+  st.textContent = c.status;
+  st.className = 'status-badge ' + c.statusClass;
+  document.getElementById('char-name').textContent = c.name;
+  document.getElementById('char-class').textContent = c.classLabel;
+  document.getElementById('char-age').textContent = c.age;
+  document.getElementById('char-gender').textContent = c.gender;
+  document.getElementById('char-faction').textContent = c.faction;
+  const dEl = document.getElementById('char-danger');
+  dEl.textContent = c.danger; dEl.style.color = c.dangerColor;
+  document.getElementById('char-traits').innerHTML = c.traits.map(t => `<span class="trait-badge ${t.cls}">${t.label}</span>`).join('');
+  document.getElementById('char-bg').textContent = c.bg;
+  document.getElementById('char-motiv').textContent = c.motiv;
+  document.getElementById('char-links').textContent = c.links;
+  document.getElementById('footer-note').textContent = c.footerNote;
+  document.getElementById('footer-id').textContent = c.id;
+  document.getElementById('stat-rows').innerHTML = c.stats.map(s => `
+    <div class="stat-row">
+      <span class="stat-name">${s.name}</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${s.val}%;background:${s.color}"></div></div>
+      <span class="stat-val">${s.val}</span>
+    </div>`).join('');
+  document.getElementById('tab-traits').innerHTML = c.traitBlocks.map(t => `
+    <div class="trait-block ${t.cls}">
+      <div class="trait-title" style="color:${t.titleColor}">${t.title}</div>
+      <div class="trait-desc">${t.desc}</div>
+    </div>`).join('');
+  drawRadar(c);
+}
+
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-stats').classList.toggle('hidden', tab !== 'stats');
+  document.getElementById('tab-bio').classList.toggle('hidden', tab !== 'bio');
+  document.getElementById('tab-traits').classList.toggle('hidden', tab !== 'traits');
+}
+
+function drawRadar(c) {
+  const canvas = document.getElementById('radarCanvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w/2, cy = h/2, R = 68;
+  const n = c.stats.length;
+  const angles = c.stats.map((_, i) => -Math.PI/2 + (2*Math.PI/n)*i);
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 0.5;
+  [0.2,0.4,0.6,0.8,1].forEach(r => {
+    ctx.beginPath();
+    angles.forEach((a,i) => { const x=cx+Math.cos(a)*R*r, y=cy+Math.sin(a)*R*r; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.closePath(); ctx.stroke();
+  });
+  angles.forEach(a => { ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*R, cy+Math.sin(a)*R); ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.stroke(); });
+  ctx.beginPath();
+  ctx.fillStyle = c.color + '30';
+  ctx.strokeStyle = c.color;
+  ctx.lineWidth = 1.5;
+  c.stats.forEach((s,i) => {
+    const r=s.val/100, x=cx+Math.cos(angles[i])*R*r, y=cy+Math.sin(angles[i])*R*r;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  });
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = c.color;
+  c.stats.forEach((s,i) => {
+    const r=s.val/100, x=cx+Math.cos(angles[i])*R*r, y=cy+Math.sin(angles[i])*R*r;
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+  });
+  ctx.fillStyle = 'rgba(150,150,170,0.7)';
+  ctx.font = '9px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  c.stats.forEach((s,i) => {
+    const a=angles[i], x=cx+Math.cos(a)*(R+13), y=cy+Math.sin(a)*(R+13);
+    ctx.fillText(s.name, x, y+3);
+  });
+}
+
+loadChar(0);
+</script>
+</body>
+</html>
