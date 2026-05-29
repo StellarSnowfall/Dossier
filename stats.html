@@ -236,6 +236,13 @@ a { color: #a78bfa; text-decoration: none; }
                 <select id="f-game" class="form-select" style="width:100%" onchange="syncRoleDropdowns()" required></select>
             </div>
             <div class="field">
+                <label class="stamp">Формат</label>
+                <div id="mode-pills" class="pills-row tight">
+                    <button type="button" class="pill sm toggle active" data-mode="offline" onclick="setSessionMode('offline', this)">Оффлайн</button>
+                    <button type="button" class="pill sm toggle" data-mode="online" onclick="setSessionMode('online', this)">Онлайн</button>
+                </div>
+            </div>
+            <div class="field">
                 <label class="stamp">Участники</label>
                 <div id="participants-pills" class="pills-row tight"></div>
             </div>
@@ -633,7 +640,60 @@ function renderRoleMatrix() {
         return;
     }
 
-    const roles = game.roles;
+    const roles = game.roles || [];
+    const sessions = STATE.sessions.filter(s => s.game === game.name);
+
+    // Игры без ролей (Доминион, Манчкин): простая таблица В / П / %
+    if (!roles.length) {
+        head.innerHTML = `
+            <tr>
+                <th class="player-col">Игрок</th>
+                <th class="group">В</th>
+                <th class="group">П</th>
+                <th class="group">%</th>
+            </tr>
+        `;
+
+        const map = {};
+        sessions.forEach(s => {
+            (s.roles || []).forEach(r => {
+                if (!map[r.player]) map[r.player] = { t: 0, w: 0 };
+                map[r.player].t++;
+                if (r.won) map[r.player].w++;
+            });
+        });
+
+        const playersInGame = new Set(Object.keys(map));
+        const rows = STATE.players.filter(p => playersInGame.has(p));
+        if (!rows.length) rows.push(...STATE.players);
+
+        body.innerHTML = '';
+        rows.forEach(player => {
+            const s = map[player];
+            const tr = document.createElement('tr');
+            if (!s || !s.t) {
+                tr.innerHTML = `
+                    <td class="player-name">${player}</td>
+                    <td class="group"><span class="dash">—</span></td>
+                    <td class="group"><span class="dash">—</span></td>
+                    <td class="group pct-cell"><span class="dash">—</span></td>
+                `;
+            } else {
+                const l = s.t - s.w;
+                const raw = Math.round((s.w / s.t) * 100);
+                const clr = pctColor(raw);
+                tr.innerHTML = `
+                    <td class="player-name">${player}</td>
+                    <td class="group" style="color:#4ade80;">${s.w}</td>
+                    <td class="group" style="color:#fb7185;">${l}</td>
+                    <td class="group pct-cell" style="color:${clr};">${raw}%</td>
+                `;
+            }
+            body.appendChild(tr);
+        });
+        return;
+    }
+
     let headRow1 = '<tr><th class="player-col">Игрок</th>';
     let headRow2 = '<tr><th class="player-col"></th>';
     roles.forEach(r => {
@@ -645,9 +705,9 @@ function renderRoleMatrix() {
     head.innerHTML = headRow1 + headRow2;
 
     const map = {};
-    STATE.sessions.filter(s => s.game === game.name).forEach(s => {
+    sessions.forEach(s => {
         (s.roles || []).forEach(r => {
-            const key = `${r.player}|||${r.role}`;
+            const key = `${r.player}|||${r.role || ''}`;
             if (!map[key]) map[key] = { t: 0, w: 0 };
             map[key].t++;
             if (r.won) map[key].w++;
@@ -655,7 +715,7 @@ function renderRoleMatrix() {
     });
 
     const playersInGame = new Set();
-    STATE.sessions.filter(s => s.game === game.name).forEach(s =>
+    sessions.forEach(s =>
         (s.roles || []).forEach(r => playersInGame.add(r.player))
     );
     const rows = STATE.players.filter(p => playersInGame.has(p));
@@ -747,9 +807,11 @@ function renderArchive() {
 
         byDate[dateKey].forEach(s => {
             const participants = (s.roles || []).map(r => r.player).join(', ');
+            const modeLabel = (s.mode === 'online') ? 'Онлайн' : 'Оффлайн';
             const rolesHtml = (s.roles || []).map(r => {
                 const mark = r.won ? '<span class="won">✓</span>' : '<span class="lost">✗</span>';
-                return `<span class="log-role-line">${r.player}: ${r.role} ${mark}</span>`;
+                const rolePart = r.role ? `${r.role} ` : '';
+                return `<span class="log-role-line">${r.player}: ${rolePart}${mark}</span>`;
             }).join('');
 
             const card = document.createElement('div');
@@ -758,7 +820,7 @@ function renderArchive() {
                 <div class="log-top">
                     <div>
                         <div class="log-game">${s.game}</div>
-                        <div class="log-meta">Участники: <b>${participants || '—'}</b></div>
+                        <div class="log-meta">Формат: <b>${modeLabel}</b> · Участники: <b>${participants || '—'}</b></div>
                     </div>
                     <div class="log-actions">
                         <button class="icon-btn" title="Изменить" onclick="editSession(${s.id})">✎</button>
@@ -780,6 +842,7 @@ function openSessionModal() {
     document.getElementById('f-date').valueAsDate = new Date();
     document.getElementById('f-notes').value = '';
     document.getElementById('form-players-root').innerHTML = '';
+    setSessionMode('offline');
     renderParticipantsPills([]);
     syncGameSelect();
     syncRoleDropdowns();
@@ -800,8 +863,9 @@ function editSession(id) {
     document.getElementById('f-game').value = s.game;
     document.getElementById('f-notes').value = s.notes || '';
     document.getElementById('form-players-root').innerHTML = '';
+    setSessionMode(s.mode === 'online' ? 'online' : 'offline');
     const selected = Array.from(new Set((s.roles || []).map(r => r.player)));
-    renderParticipantsPills(selected);
+    renderParticipantsPills(selected, true);
     (s.roles || []).forEach(r => addRoleRow(r.player, r.role, r.won));
     syncRoleDropdowns();
     document.getElementById('session-modal').classList.remove('hidden');
@@ -862,7 +926,18 @@ function getSelectedParticipants() {
         .filter(Boolean);
 }
 
-function renderParticipantsPills(selectedPlayers) {
+function setSessionMode(mode, btnEl) {
+    document.querySelectorAll('#mode-pills .pill.toggle').forEach(b => b.classList.remove('active'));
+    const btn = btnEl || document.querySelector(`#mode-pills .pill.toggle[data-mode="${mode}"]`);
+    if (btn) btn.classList.add('active');
+}
+
+function getSessionMode() {
+    const active = document.querySelector('#mode-pills .pill.toggle.active');
+    return active?.getAttribute('data-mode') === 'online' ? 'online' : 'offline';
+}
+
+function renderParticipantsPills(selectedPlayers, skipSync = false) {
     const root = document.getElementById('participants-pills');
     if (!root) return;
     const set = new Set(selectedPlayers || []);
@@ -879,7 +954,7 @@ function renderParticipantsPills(selectedPlayers) {
         };
         root.appendChild(btn);
     });
-    syncRolesWithParticipants();
+    if (!skipSync) syncRolesWithParticipants();
 }
 
 function syncRolesWithParticipants() {
@@ -907,21 +982,27 @@ function syncRolesWithParticipants() {
 async function saveSession() {
     const date = document.getElementById('f-date').value;
     const game = document.getElementById('f-game').value;
+    const mode = getSessionMode();
     const notes = document.getElementById('f-notes').value.trim();
     const rows = document.querySelectorAll('.player-row');
-    if (!rows.length) return alert('Добавьте хотя бы одного игрока.');
+    if (!rows.length) return alert('Выберите хотя бы одного участника.');
 
     const roles = [];
+    const seen = new Set();
     rows.forEach(r => {
+        const player = r.querySelector('.src-p').value;
         const roleValue = r.querySelector('.src-r').disabled ? '' : r.querySelector('.src-r').value;
+        const key = `${player}|||${roleValue}`;
+        if (seen.has(key)) return;
+        seen.add(key);
         roles.push({
-            player: r.querySelector('.src-p').value,
+            player,
             role: roleValue,
             won: r.querySelector('.src-w').value === 'true'
         });
     });
 
-    const session = { id: editingSessionId || Date.now(), date, game, notes, roles };
+    const session = { id: editingSessionId || Date.now(), date, game, mode, notes, roles };
 
     if (editingSessionId) {
         const i = STATE.sessions.findIndex(s => s.id === editingSessionId);
