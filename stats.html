@@ -169,6 +169,9 @@ a { color: #a78bfa; text-decoration: none; }
     </div>
     <div class="header-right">
         <span id="sync-status" class="sync-pill"><span class="sync-dot"></span><span id="sync-text">Загрузка…</span></span>
+        <span id="auth-badge" class="sync-pill ok hidden"><span class="sync-dot"></span>Админ</span>
+        <button type="button" id="btn-login" class="nav-btn" onclick="openAuthModal()">Войти</button>
+        <button type="button" id="btn-logout" class="nav-btn hidden" onclick="signOut()">Выйти</button>
         <button type="button" class="nav-btn" onclick="forceRefresh()" title="Загрузить свежие данные">↻</button>
         <a href="https://stellarsnowfall.github.io/Dossier/" class="nav-btn">← Досье</a>
     </div>
@@ -215,8 +218,8 @@ a { color: #a78bfa; text-decoration: none; }
                     <option value="">Все игроки</option>
                 </select>
             </div>
-            <button class="nav-btn primary" onclick="openSessionModal()">+ Добавить</button>
-            <button class="nav-btn" onclick="openSettingsModal()" title="Игры и игроки">⚙</button>
+            <button class="nav-btn primary admin-only" onclick="openSessionModal()">+ Добавить</button>
+            <button class="nav-btn admin-only" onclick="openSettingsModal()" title="Игры и игроки">⚙</button>
         </div>
         <div id="archive-output"></div>
     </section>
@@ -263,6 +266,29 @@ a { color: #a78bfa; text-decoration: none; }
     </div>
 </div>
 
+<!-- Modal: admin login -->
+<div id="auth-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeAuthModal()">
+    <div class="modal">
+        <h3>Вход администратора</h3>
+        <p style="font-size:12px;color:#64748b;margin-bottom:14px;">
+            Только вы сможете добавлять и менять партии. Друзья видят архив без входа.
+        </p>
+        <div class="field">
+            <label class="stamp">Email</label>
+            <input type="email" id="auth-email" class="form-input" placeholder="ваш@email.com" autocomplete="username">
+        </div>
+        <div class="field">
+            <label class="stamp">Пароль</label>
+            <input type="password" id="auth-password" class="form-input" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <p id="auth-error" style="font-size:12px;color:#fb7185;margin-bottom:10px;display:none;"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn-action secondary" onclick="closeAuthModal()">Отмена</button>
+            <button type="button" class="btn-action" onclick="signIn()">Войти</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: settings (games + players) -->
 <div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSettingsModal()">
     <div class="modal">
@@ -282,6 +308,7 @@ a { color: #a78bfa; text-decoration: none; }
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // ХРАНИЛИЩЕ — выберите один backend (см. комментарии ниже)
@@ -296,6 +323,12 @@ const API_KEY = '...';  // можно оставить — не использу
 
 const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';  // anon public
+
+// ⚠️ Укажите ТОТ ЖЕ email, что в supabase-auth-setup.sql и в Supabase → Authentication → Users
+const ADMIN_EMAIL = 'medet.ns@gmail.com';
+
+let supabaseClient = null;
+let authSession = null;
 
 // Путь к JSON в репозитории (для GitHub Pages: положите data/archive.json в Dossier/)
 const GITHUB_DATA_URL = './data/archive.json';
@@ -382,13 +415,91 @@ function jsonbinHeaders(json = false) {
     return h;
 }
 
-function supabaseHeaders(json = false) {
-    const h = {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`
-    };
+function supabaseHeaders(json = false, forWrite = false) {
+    const token = (forWrite && authSession?.access_token) ? authSession.access_token : SUPABASE_KEY;
+    const h = { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` };
     if (json) h['Content-Type'] = 'application/json';
     return h;
+}
+
+function isAdmin() {
+    const email = authSession?.user?.email;
+    return !!email && email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
+
+function requireAdmin() {
+    if (!isAdmin()) {
+        alert('Редактирование доступно только администратору. Войдите под своим email.');
+        openAuthModal();
+        throw new Error('Not admin');
+    }
+}
+
+function updateAdminUI() {
+    const admin = isAdmin();
+    const loggedIn = !!authSession;
+    document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !admin));
+    document.getElementById('btn-login')?.classList.toggle('hidden', loggedIn);
+    document.getElementById('btn-logout')?.classList.toggle('hidden', !loggedIn);
+    document.getElementById('auth-badge')?.classList.toggle('hidden', !admin);
+}
+
+async function initAuth() {
+    if (!SUPABASE_URL || !SUPABASE_KEY || typeof supabase === 'undefined') return;
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    authSession = session;
+    updateAdminUI();
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+        authSession = session;
+        updateAdminUI();
+        if (document.getElementById('page-content') && !document.getElementById('page-content').classList.contains('hidden')) {
+            renderArchive();
+        }
+    });
+}
+
+function openAuthModal() {
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-email').value = ADMIN_EMAIL.includes('@example.com') ? '' : ADMIN_EMAIL;
+    document.getElementById('auth-modal').classList.remove('hidden');
+}
+
+function closeAuthModal() {
+    document.getElementById('auth-modal').classList.add('hidden');
+}
+
+async function signIn() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.style.display = 'none';
+    if (!supabaseClient) {
+        errEl.textContent = 'Supabase SDK не загрузился.';
+        errEl.style.display = 'block';
+        return;
+    }
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+        errEl.textContent = error.message;
+        errEl.style.display = 'block';
+        return;
+    }
+    authSession = data.session;
+    updateAdminUI();
+    closeAuthModal();
+    document.getElementById('auth-password').value = '';
+    if (!isAdmin()) {
+        alert(`Вы вошли как ${email}, но этот email не является администратором.`);
+        await signOut();
+    }
+}
+
+async function signOut() {
+    if (supabaseClient) await supabaseClient.auth.signOut();
+    authSession = null;
+    updateAdminUI();
+    renderArchive();
 }
 
 async function fetchJsonbin() {
@@ -431,14 +542,21 @@ async function saveSupabase() {
     if (!SUPABASE_URL || !SUPABASE_KEY) {
         throw new Error('Заполните SUPABASE_URL и SUPABASE_KEY');
     }
+    if (!isAdmin()) {
+        throw new Error('Нет прав на запись. Войдите как администратор.');
+    }
     const res = await fetch(`${SUPABASE_URL}/rest/v1/archive?id=eq.1`, {
         method: 'PATCH',
-        headers: { ...supabaseHeaders(true), Prefer: 'return=minimal' },
+        headers: { ...supabaseHeaders(true, true), Prefer: 'return=minimal' },
         body: JSON.stringify({ data: STATE, updated_at: new Date().toISOString() })
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `Supabase ${res.status}`);
+        const msg = err.message || err.hint || `Supabase ${res.status}`;
+        if (res.status === 401 || res.status === 403) {
+            throw new Error(`Доступ запрещён: ${msg}. Проверьте RLS и email в supabase-auth-setup.sql`);
+        }
+        throw new Error(msg);
     }
 }
 
@@ -480,6 +598,7 @@ async function loadCloudData(force = false) {
         STATE = cached;
         showPage();
         refreshAll();
+        updateAdminUI();
         setSyncStatus(true, 'Кэш · общий архив');
     }
 
@@ -489,8 +608,9 @@ async function loadCloudData(force = false) {
         writeCache(fresh);
         showPage();
         refreshAll();
+        updateAdminUI();
         const labels = { jsonbin: 'JSONBin', supabase: 'Supabase', github: 'GitHub' };
-        setSyncStatus(true, labels[STORAGE] || 'Онлайн');
+        setSyncStatus(true, isAdmin() ? `${labels[STORAGE] || 'Онлайн'} · админ` : (labels[STORAGE] || 'Онлайн'));
     } catch (e) {
         if (cached) {
             setSyncStatus(false, 'Офлайн · кэш');
@@ -514,25 +634,10 @@ function forceRefresh() {
 }
 
 async function pushToCloud() {
+    requireAdmin();
     await saveRemote();
-    const labels = { jsonbin: 'JSONBin', supabase: 'Supabase' };
-    setSyncStatus(true, labels[STORAGE] || 'Сохранено');
+    setSyncStatus(true, isAdmin() ? 'Сохранено · админ' : 'Supabase');
 }
-
-/*
-  Supabase — один раз в SQL Editor:
-
-  create table archive (
-    id int primary key default 1,
-    data jsonb not null default '{}',
-    updated_at timestamptz default now()
-  );
-  insert into archive (id, data) values (1, '{}');
-  alter table archive enable row level security;
-  create policy "friends read" on archive for select using (true);
-  create policy "friends write" on archive for update using (true);
-  create policy "friends insert" on archive for insert with check (id = 1);
-*/
 
 function refreshAll() {
     populateFilters();
@@ -782,7 +887,9 @@ function renderArchive() {
     if (fPlayer) list = list.filter(s => (s.roles || []).some(r => r.player === fPlayer));
 
     if (!list.length) {
-        root.innerHTML = '<div class="empty-hint">Пока нет партий. Нажмите «+ Добавить».</div>';
+        root.innerHTML = isAdmin()
+            ? '<div class="empty-hint">Пока нет партий. Нажмите «+ Добавить».</div>'
+            : '<div class="empty-hint">Пока нет партий в архиве.</div>';
         return;
     }
 
@@ -814,6 +921,12 @@ function renderArchive() {
                 return `<span class="log-role-line">${r.player}: ${rolePart}${mark}</span>`;
             }).join('');
 
+            const adminActions = isAdmin() ? `
+                    <div class="log-actions admin-only">
+                        <button class="icon-btn" title="Изменить" onclick="editSession(${s.id})">✎</button>
+                        <button class="icon-btn danger" title="Удалить" onclick="deleteSession(${s.id})">×</button>
+                    </div>` : '';
+
             const card = document.createElement('div');
             card.className = 'log-card';
             card.innerHTML = `
@@ -822,10 +935,7 @@ function renderArchive() {
                         <div class="log-game">${s.game}</div>
                         <div class="log-meta">Формат: <b>${modeLabel}</b> · Участники: <b>${participants || '—'}</b></div>
                     </div>
-                    <div class="log-actions">
-                        <button class="icon-btn" title="Изменить" onclick="editSession(${s.id})">✎</button>
-                        <button class="icon-btn danger" title="Удалить" onclick="deleteSession(${s.id})">×</button>
-                    </div>
+                    ${adminActions}
                 </div>
                 <div class="log-roles">${rolesHtml}</div>
                 ${s.notes ? `<div class="log-notes">${s.notes}</div>` : ''}
@@ -837,6 +947,7 @@ function renderArchive() {
 
 // ── Session modal ──
 function openSessionModal() {
+    try { requireAdmin(); } catch { return; }
     editingSessionId = null;
     document.getElementById('session-modal-title').textContent = 'Добавить партию';
     document.getElementById('f-date').valueAsDate = new Date();
@@ -855,6 +966,7 @@ function closeSessionModal() {
 }
 
 function editSession(id) {
+    try { requireAdmin(); } catch { return; }
     const s = STATE.sessions.find(x => x.id === id);
     if (!s) return;
     editingSessionId = id;
@@ -1022,6 +1134,7 @@ async function saveSession() {
 }
 
 async function deleteSession(id) {
+    try { requireAdmin(); } catch { return; }
     if (!confirm('Удалить эту партию из архива?')) return;
     STATE.sessions = STATE.sessions.filter(s => s.id !== id);
     try {
@@ -1035,6 +1148,7 @@ async function deleteSession(id) {
 
 // ── Settings: dynamic games & players ──
 function openSettingsModal() {
+    try { requireAdmin(); } catch { return; }
     document.getElementById('cfg-players').value = STATE.players.join('\n');
     document.getElementById('cfg-games').value = STATE.games
         .map(g => `${g.name} | ${g.roles.join(', ')}`).join('\n');
@@ -1072,7 +1186,10 @@ async function saveSettings() {
     }
 }
 
-window.addEventListener('DOMContentLoaded', loadCloudData);
+window.addEventListener('DOMContentLoaded', async () => {
+    await initAuth();
+    await loadCloudData();
+});
 </script>
 </body>
 </html>
