@@ -277,14 +277,13 @@ a { color: #a78bfa; text-decoration: none; }
 // 'jsonbin'  — уже настроено; с кэшем ≈1 запрос на человека за сессию, не на каждый F5
 // 'supabase' — рекомендуется для GitHub Pages: без лимита 10k, все видят одни данные
 // 'github'   — только чтение из data/archive.json в репозитории (редактировать нельзя с сайта)
-const STORAGE = 'jsonbin';
+const STORAGE = 'supabase';
 
 const BIN_ID = '6a19516421f9ee59d298c40c';
-const API_KEY = '$2a$10$BQqbVX0PNe3qvydalu6fY.42sB0PTWdxvPWbx4RVscVOnfank0A6W';
+const API_KEY = '...';  // можно оставить — не используется при supabase
 
-// Supabase: создайте таблицу (SQL в конце файла), вставьте URL и anon key:
-const SUPABASE_URL = '';
-const SUPABASE_KEY = '';
+const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';  // anon public
 
 // Путь к JSON в репозитории (для GitHub Pages: положите data/archive.json в Dossier/)
 const GITHUB_DATA_URL = './data/archive.json';
