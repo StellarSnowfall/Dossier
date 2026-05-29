@@ -1,206 +1,8 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Статистика — Игровой архив</title>
-<style>
-/* --- ВАШИ ОРИГИНАЛЬНЫЕ БАЗОВЫЕ СТИЛИ --- */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #0f0f1a;
-    color: #e2e8f0;
-    min-height: 100vh;
-    padding: 24px 16px;
-}
-a { color: #a78bfa; text-decoration: none; }
-
-/* Шапка из вашего шаблона */
-.header-bar {
-    max-width: 1100px;
-    margin: 0 auto 20px;
-    background: #0a0a14;
-    border: 1px solid #2d2d4e;
-    border-radius: 12px;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.header-left { display: flex; align-items: center; gap: 12px; }
-.logo-img { height: 34px; width: 34px; object-fit: cover; border-radius: 50%; border: 1px solid #2d2d4e; }
-.stamp { font-size: 11px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; }
-.nav-btn {
-    background: #13131f;
-    border: 1px solid #2d2d4e;
-    color: #e2e8f0;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.nav-btn:hover { background: #1e1e2f; border-color: #a78bfa; }
-
-/* Контентная область */
-.main-container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-.main-card { background: #13131f; border: 1px solid #2d2d4e; border-radius: 14px; padding: 24px; }
-
-/* Табы */
-.tabs-nav { display: flex; gap: 8px; border-bottom: 1px solid #2d2d4e; margin-bottom: 24px; padding-bottom: 1px; }
-.tab-btn {
-    font-size: 13px; padding: 10px 16px; cursor: pointer; color: #64748b; background: none;
-    border: none; border-bottom: 2px solid transparent; font-family: inherit; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;
-}
-.tab-btn:hover { color: #cbd5e1; }
-.tab-btn.active { color: #a78bfa; border-bottom-color: #a78bfa; }
-
-/* --- ТРЕБОВАНИЕ №3: ЭСТЕТИЧНЫЙ ОБЩИЙ ВИНРЕЙТ (ЛИДЕРБОРД) --- */
-.leaderboard-list { display: flex; flex-direction: column; gap: 12px; }
-.leaderboard-item {
-    display: flex; align-items: center; justify-content: space-between;
-    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px; padding: 14px 20px;
-}
-.lb-rank { font-size: 18px; font-weight: 800; color: #475569; width: 40px; font-style: italic; }
-.lb-name { font-size: 15px; font-weight: bold; color: #f8fafc; flex: 1; }
-.lb-details { display: flex; align-items: center; gap: 20px; justify-content: flex-end; flex: 2; }
-.lb-games { font-size: 12px; color: #64748b; font-family: monospace; }
-.lb-wl { font-family: monospace; font-size: 13px; color: #94a3b8; }
-.lb-wl .w { color: #10b981; font-weight: bold; }
-.lb-wl .l { color: #f43f5e; font-weight: bold; }
-.lb-progress-wrapper { width: 130px; }
-.lb-pct { font-family: monospace; font-size: 15px; font-weight: bold; width: 50px; text-align: right; }
-
-/* Медали */
-.rank-1 .lb-rank { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.2); }
-.rank-2 .lb-rank { color: #cbd5e1; }
-.rank-3 .lb-rank { color: #ba855a; }
-
-.p-bar-bg { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
-.p-bar-fill { height: 100%; transition: width 0.5s ease; }
-
-/* --- ТРЕБОВАНИЕ №2: КАТЕГОРИИ НАСТОЛЬНЫХ ИГР В РОЛЯХ --- */
-.game-box { margin-bottom: 24px; background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px; overflow: hidden; }
-.game-box-title { background: #1a1a2e; padding: 12px 16px; font-size: 13px; font-weight: bold; color: #a78bfa; border-bottom: 1px solid #2d2d4e; text-transform: uppercase; letter-spacing: 1px; }
-.table-spec { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-.table-spec th { color: #64748b; font-size: 11px; text-transform: uppercase; padding: 12px 16px; border-bottom: 1px solid #2d2d4e; }
-.table-spec td { padding: 12px 16px; border-bottom: 1px solid #13131f; color: #cbd5e1; }
-.table-spec tr:last-child td { border-bottom: none; }
-
-/* --- ТРЕБОВАНИЕ №4: РАБОЧИЙ АРХИВ ПАРТИЙ --- */
-.log-card { background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #a78bfa; }
-.log-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #2d2d4e; padding-bottom: 8px; margin-bottom: 12px; }
-.log-tag { background: #1e1e38; color: #a78bfa; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-.log-date { font-size: 11px; color: #64748b; font-family: monospace; }
-.log-winner { font-size: 12px; color: #a7f3d0; background: rgba(4,120,87,0.15); padding: 3px 10px; border-radius: 12px; }
-.log-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
-.log-pill { background: #13131f; padding: 8px 12px; border-radius: 6px; font-size: 12px; display: flex; justify-content: space-between; border: 1px solid #2d2d4e; }
-.log-notes { font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 10px; padding-left: 8px; border-left: 2px solid #4b5563; }
-
-/* Форма добавления (Админка) */
-.form-input, .form-select { width: 100%; background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 6px; padding: 10px; color: #f8fafc; font-size: 13px; font-family: inherit; }
-.form-input:focus, .form-select:focus { border-color: #a78bfa; outline: none; }
-.player-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-.btn-action { background: #a78bfa; color: #0f0f1a; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; text-transform: uppercase; width: 100%; }
-.btn-action:hover { background: #c084fc; }
-
-.status-bar { text-align: center; padding: 20px; color: #64748b; font-size: 13px; }
-.hidden { display: none !important; }
-</style>
-</head>
-<body>
-
-<div class="header-bar">
-    <div class="header-left">
-        <img src="Логотип.jpg" class="logo-img" alt="Logo">
-        <div style="display:flex; flex-direction:column;">
-            <span style="font-weight:700; font-size:14px; letter-spacing:0.5px;">ИГРОВОЙ АРХИВ</span>
-            <span class="stamp">Статистика и логи</span>
-        </div>
-    </div>
-    <div class="header-right">
-        <a href="index.html" class="nav-btn">➔ В досье</a>
-    </div>
-</div>
-
-<div class="main-container">
-    <div class="main-card">
-        <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('total', this)">Общий винрейт</button>
-            <button class="tab-btn" onclick="switchTab('roles', this)">Статистика по ролям</button>
-            <button class="tab-btn" onclick="switchTab('archive', this)">Архив партий</button>
-            <button class="tab-btn" style="margin-left: auto; color: #475569;" onclick="switchTab('admin', this)">⚙ Добавить</button>
-        </div>
-
-        <div id="cloud-loader" class="status-bar">Получение данных из облака...</div>
-
-        <div id="view-total" class="hidden">
-            <div class="leaderboard-list" id="leaderboard-output"></div>
-        </div>
-
-        <div id="view-roles" class="hidden">
-            <div id="roles-output"></div>
-        </div>
-
-        <div id="view-archive" class="hidden">
-            <div id="archive-output"></div>
-        </div>
-
-        <div id="view-admin" class="hidden">
-            <div id="admin-lock" style="text-align:center; padding: 30px 0;">
-                <input type="password" id="admin-pass" class="form-input" placeholder="Введите PIN-код модератора" style="max-width: 260px; margin-bottom: 12px; text-align: center;"><br>
-                <button class="btn-action" style="max-width: 260px;" onclick="checkPin()">Войти</button>
-            </div>
-
-            <div id="admin-form-block" class="hidden">
-                <form onsubmit="event.preventDefault(); sendSessionToCloud();">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label class="stamp" style="display:block; margin-bottom:4px;">Дата сессии</label>
-                            <input type="date" id="f-date" class="form-input" required>
-                        </div>
-                        <div>
-                            <label class="stamp" style="display:block; margin-bottom:4px;">Выбор дисциплины</label>
-                            <select id="f-game" class="form-select" onchange="syncRoleDropdowns()" required>
-                                <option value="Секретный Гитлер">Секретный Гитлер</option>
-                                <option value="Письма Призрака">Письма Призрака</option>
-                                <option value="Накорми кракена">Накорми кракена</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 12px;">
-                        <label class="stamp" style="display:block; margin-bottom:4px;">Кто победил</label>
-                        <input type="text" id="f-winner" class="form-input" placeholder="Например: Либералы, Пираты или Азирет" required>
-                    </div>
-
-                    <div style="background: #0a0a14; padding: 14px; border-radius: 8px; border: 1px solid #2d2d4e; margin-bottom: 12px;">
-                        <span class="stamp" style="display:block; margin-bottom:10px; color:#a78bfa;">Игроки и роли</span>
-                        <div id="form-players-root"></div>
-                        <button type="button" class="nav-btn" style="width:100%; font-size:12px;" onclick="buildPlayerRow()">+ Добавить участника</button>
-                    </div>
-
-                    <div style="margin-bottom: 16px;">
-                        <label class="stamp" style="display:block; margin-bottom:4px;">Заметки</label>
-                        <input type="text" id="f-notes" class="form-input" placeholder="Краткий комментарий к игре...">
-                    </div>
-
-                    <button type="submit" class="btn-action">⚡ Отправить сессию в облако</button>
-                </form>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-<script>
 // =========================================================================
 // НАСТРОЙКА ОБЛАЧНОГО ХРАНИЛИЩА JSONBin.io
 // =========================================================================
-const BIN_ID = '6a19516421f9ee59d298c40c'; // Вставьте ваш Bin ID
-const API_KEY = '$2a$10$BQqbVX0PNe3qvydalu6fY.42sB0PTWdxvPWbx4RVscVOnfank0A6W'; // Вставьте ваш X-Master-Key
+const BIN_ID = '6a19516421f9ee59d298c40c'; 
+const API_KEY = '$2a$10$BQqbVX0PNe3qvydalu6fY.42sB0PTWdxvPWbx4RVscVOnfank0A6W'; 
 // =========================================================================
 
 const REPO_PLAYERS = ["Азирет", "Дияр", "Танай"];
@@ -221,18 +23,46 @@ function switchTab(id, btn) {
     document.getElementById('view-admin').classList.toggle('hidden', id !== 'admin');
 }
 
+// ЗАГРУЗКА ДАННЫХ ИЗ ОБЛАКА
 async function loadCloudData() {
     try {
+        // Пробуем сначала через X-Master-Key, если не выйдет - код перехватит ошибку
         const r = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': API_KEY, 'X-Bin-Meta': 'false' }
+            headers: { 
+                'X-Master-Key': API_KEY, 
+                'X-Bin-Meta': 'false' 
+            }
         });
-        if (!r.ok) throw new Error();
-        GLOBAL_GAMES = await r.json();
+        
+        if (!r.ok) {
+            // Если не ок, пробуем сделать запрос с X-Access-Key (на случай если это Access-ключ)
+            const altResponse = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                headers: { 'X-Access-Key': API_KEY, 'X-Bin-Meta': 'false' }
+            });
+            if (!altResponse.ok) {
+                const errData = await altResponse.json().catch(() => ({}));
+                throw new Error(errData.message || `Статус сервера: ${altResponse.status}`);
+            }
+            GLOBAL_GAMES = await altResponse.json();
+        } else {
+            GLOBAL_GAMES = await r.json();
+        }
+
+        // Подстраховка на случай, если в облаке лежит не массив, а объект структуры бина
+        if (!Array.isArray(GLOBAL_GAMES)) {
+            if (GLOBAL_GAMES.record && Array.isArray(GLOBAL_GAMES.record)) {
+                GLOBAL_GAMES = GLOBAL_GAMES.record;
+            } else {
+                GLOBAL_GAMES = [];
+            }
+        }
+
         document.getElementById("cloud-loader").classList.add("hidden");
         document.getElementById("view-total").classList.remove("hidden");
         updateAllViews();
     } catch (e) {
-        document.getElementById("cloud-loader").textContent = "Ошибка авторизации или бин пуст. Проверьте конфигурацию ключей.";
+        document.getElementById("cloud-loader").textContent = `Ошибка загрузки базы: ${e.message}`;
+        console.error(e);
     }
 }
 
@@ -242,7 +72,7 @@ function updateAllViews() {
     renderArchive();
 }
 
-// 1. ОБЩИЙ ВИНРЕЙТ (ТРЕБОВАНИЕ №3)
+// 1. ОБЩИЙ ВИНРЕЙТ (ЛИДЕРБОРД)
 function renderLeaderboard() {
     const root = document.getElementById("leaderboard-output");
     root.innerHTML = "";
@@ -251,6 +81,7 @@ function renderLeaderboard() {
     REPO_PLAYERS.forEach(p => counts[p] = { t: 0, w: 0, l: 0 });
 
     GLOBAL_GAMES.forEach(g => {
+        if (!g.roles || !Array.isArray(g.roles)) return;
         g.roles.forEach(r => {
             if (counts[r.player]) {
                 counts[r.player].t++;
@@ -286,7 +117,7 @@ function renderLeaderboard() {
     });
 }
 
-// 2. СТАТИСТИКА ПО РОЛЯМ ПО КАТЕГОРИЯМ ИГР (ТРЕБОВАНИЕ №2)
+// 2. СТАТИСТИКА ПО РОЛЯМ ПО КАТЕГОРИЯМ
 function renderCategorizedTables() {
     const root = document.getElementById("roles-output");
     root.innerHTML = "";
@@ -295,7 +126,7 @@ function renderCategorizedTables() {
     Object.keys(MAP_ROLES).forEach(game => cache[game] = {});
 
     GLOBAL_GAMES.forEach(session => {
-        if (!cache[session.game]) return;
+        if (!cache[session.game] || !session.roles) return;
         session.roles.forEach(r => {
             const key = `${r.player}|||${r.role}`;
             if (!cache[session.game][key]) cache[session.game][key] = { t: 0, w: 0 };
@@ -357,7 +188,7 @@ function renderCategorizedTables() {
     }
 }
 
-// 3. СИНХРОННЫЙ АРХИВ (ТРЕБОВАНИЕ №4)
+// 3. АРХИВ
 function renderArchive() {
     const root = document.getElementById("archive-output");
     root.innerHTML = "";
@@ -373,12 +204,12 @@ function renderArchive() {
         const card = document.createElement("div");
         card.className = "log-card";
 
-        const pGrid = g.roles.map(r => `
+        const pGrid = g.roles ? g.roles.map(r => `
             <div class="log-pill">
                 <span><strong>${r.player}</strong> <span style="color:#64748b; font-size:11px;">(${r.role})</span></span>
                 <span style="color:${r.won ? '#10b981' : '#f43f5e'}; font-weight:bold;">${r.won ? 'В' : 'П'}</span>
             </div>
-        `).join("");
+        `).join("") : "";
 
         card.innerHTML = `
             <div class="log-header">
@@ -395,7 +226,7 @@ function renderArchive() {
     });
 }
 
-// УПРАВЛЕНИЕ АДМИНКОЙ И ДИНАМИЧЕСКИМИ РОЛЯМИ
+// УПРАВЛЕНИЕ АДМИНКОЙ
 function checkPin() {
     if (document.getElementById("admin-pass").value === "1234") {
         document.getElementById("admin-lock").classList.add("hidden");
@@ -404,7 +235,7 @@ function checkPin() {
         document.getElementById("form-players-root").innerHTML = "";
         REPO_PLAYERS.forEach(p => buildPlayerRow(p));
     } else {
-        alert("Ошибка доступа.");
+        alert("Неверный PIN модератора.");
     }
 }
 
@@ -437,7 +268,7 @@ function syncRoleDropdowns() {
     });
 }
 
-// ОБНОВЛЕНИЕ БАЗЫ ДАННЫХ В ОБЛАКЕ (PUT-ЗАПРОС)
+// СИНХРОНИЗАЦИЯ И ОТПРАВКА НА СЕРВЕР С ОТКЛЮЧЕНИЕМ ВЕРСИЙ
 async function sendSessionToCloud() {
     const date = document.getElementById("f-date").value;
     const game = document.getElementById("f-game").value;
@@ -458,29 +289,52 @@ async function sendSessionToCloud() {
 
     const sessionObj = { id: Date.now(), date, game, winner, notes, roles: rolesArr };
     
+    // Временно пушим локально
     GLOBAL_GAMES.unshift(sessionObj);
 
     const loader = document.getElementById("cloud-loader");
     loader.textContent = "Синхронизация записи с сервером...";
     loader.classList.remove("hidden");
 
+    // Пытаемся сохранить через Master-Key
     try {
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        let response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'X-Master-Key': API_KEY,
+                'X-Bin-Versioning': 'false' // ВАЖНО: Запрещаем плодить версии, перезаписываем файл!
+            },
             body: JSON.stringify(GLOBAL_GAMES)
         });
 
-        if (!response.ok) throw new Error();
+        // Если сервер ругнулся на Master-Key, пробуем отправить как Access-Key
+        if (!response.ok && (response.status === 401 || response.status === 403)) {
+            response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'X-Access-Key': API_KEY,
+                    'X-Bin-Versioning': 'false'
+                },
+                body: JSON.stringify(GLOBAL_GAMES)
+            });
+        }
 
-        alert("Успешно синхронизировано!");
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.message || `Код ответа: ${response.status}`);
+        }
+
+        alert("Успешно синхронизировано с облаком!");
         document.getElementById("f-winner").value = "";
         document.getElementById("f-notes").value = "";
         
         updateAllViews();
         switchTab('archive', document.querySelectorAll('.tab-btn')[2]);
     } catch(e) {
-        alert("Ошибка сети. Данные не сохранились в облаке.");
+        GLOBAL_GAMES.shift(); // Удаляем ошибочную запись из локальной памяти
+        alert(`ОТВЕТ СЕРВЕРА JSONBin:\n"${e.message}"\n\nПроверьте этот текст, он указывает на точную причину.`);
     } finally {
         loader.classList.add("hidden");
     }
@@ -488,5 +342,3 @@ async function sendSessionToCloud() {
 
 window.addEventListener('DOMContentLoaded', loadCloudData);
 </script>
-</body>
-</html>
