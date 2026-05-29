@@ -1,556 +1,517 @@
-html = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Статистика — Игровой архив</title>
+<title>Статистика и Лог Партий</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0f0f1a;color:#e2e8f0;min-height:100vh;padding:24px 16px}
-a{color:#a78bfa;text-decoration:none}
-.header-bar{max-width:1100px;margin:0 auto 20px;background:#0a0a14;border:1px solid #2d2d4e;border-radius:12px;padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
-.header-left{display:flex;align-items:center;gap:12px}
-.logo-img{height:34px;width:34px;object-fit:cover;border-radius:50%;border:1px solid #2d2d4e}
-.stamp{font-size:11px;color:#555;letter-spacing:1.5px;text-transform:uppercase}
-.header-right{display:flex;align-items:center;gap:10px}
-.nav-btn{font-size:12px;color:#64748b;padding:4px 12px;border:1px solid #2d2d4e;border-radius:20px;cursor:pointer;background:none;font-family:inherit;transition:all .15s;text-decoration:none;display:inline-block}
-.nav-btn:hover{color:#c4b5fd;border-color:#7c3aed}
-.admin-badge{font-size:11px;color:#86efac;background:#052e16;border:1px solid #16a34a;border-radius:20px;padding:3px 10px;display:none}
-.container{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-.card{background:#13131f;border:1px solid #2d2d4e;border-radius:12px;overflow:hidden}
-.card-header{padding:11px 20px;border-bottom:1px solid #2d2d4e;display:flex;justify-content:space-between;align-items:center;background:#0f0f1a}
-.card-title{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#555}
-.card-body{padding:18px 20px}
-.winrate-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
-.wr-card{background:#0f0f1a;border:1px solid #2d2d4e;border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:3px}
-.wr-name{font-size:13px;font-weight:500;color:#e2e8f0}
-.wr-pct{font-size:21px;font-weight:600;font-family:monospace}
-.wr-sub{font-size:11px;color:#555}
-.wr-bar-wrap{height:3px;background:#1e293b;border-radius:2px;margin-top:5px}
-.wr-bar{height:100%;border-radius:2px;transition:width .4s}
-.game-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.gtab{font-size:12px;padding:5px 14px;border-radius:20px;border:1px solid #2d2d4e;cursor:pointer;background:transparent;color:#888;font-family:inherit;transition:all .15s}
-.gtab:hover{border-color:#555;color:#ccc}
-.gtab.active{background:#1e1040;border-color:#7c3aed;color:#c4b5fd}
-.role-table{width:100%;border-collapse:collapse;font-size:12px}
-.role-table th{text-align:center;padding:7px 8px;color:#555;font-size:10px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #2d2d4e;font-weight:500}
-.role-table th:first-child{text-align:left;padding-left:10px}
-.role-table td{padding:6px 8px;border-bottom:1px solid #1a2236;text-align:center;color:#94a3b8}
-.role-table td:first-child{text-align:left;color:#e2e8f0;font-weight:500;padding-left:10px}
-.role-table td.total-col{border-left:1px solid #2d2d4e;font-weight:600}
-.role-table tr:last-child td{border-bottom:none}
-.role-table tr:hover td{background:#0a0a14}
-.val-pos{color:#86efac}.val-neg{color:#f87171}.val-neu{color:#fbbf24}.val-zero{color:#374151}
-.archive-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.filter-select{background:#0f0f1a;border:1px solid #2d2d4e;border-radius:8px;color:#94a3b8;padding:5px 10px;font-size:12px;font-family:inherit;cursor:pointer}
-.filter-select:focus{outline:none;border-color:#7c3aed}
-.session-block{margin-bottom:14px}
-.session-date-label{font-size:11px;color:#7c3aed;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid #1e293b}
-.game-log{background:#0f0f1a;border:1px solid #1e293b;border-radius:8px;padding:11px 13px;margin-bottom:6px}
-.log-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.log-game-name{font-size:12px;font-weight:600;color:#c4b5fd}
-.log-actions{display:flex;gap:6px;flex-shrink:0}
-.log-btn{font-size:10px;color:#555;cursor:pointer;border:1px solid #1e293b;background:none;font-family:inherit;padding:2px 8px;border-radius:4px;transition:all .15s}
-.log-btn:hover{color:#a78bfa;border-color:#7c3aed}
-.log-btn.del:hover{color:#f87171;border-color:#f87171}
-.log-players{font-size:11px;color:#475569;margin-top:3px}
-.log-result{font-size:12px;color:#94a3b8;margin-top:3px}
-.log-result strong{color:#e2e8f0}
-.log-roles{font-size:11px;color:#475569;margin-top:4px;line-height:1.6}
-.log-notes{font-size:11px;color:#475569;margin-top:3px;font-style:italic}
-.empty-state{text-align:center;padding:28px;color:#374151;font-size:13px}
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:#13131f;border:1px solid #2d2d4e;border-radius:14px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;padding:22px 24px;display:flex;flex-direction:column;gap:14px}
-.modal-title{font-size:14px;font-weight:600;color:#f1f5f9;display:flex;justify-content:space-between;align-items:center}
-.modal-close{font-size:20px;color:#555;cursor:pointer;border:none;background:none;line-height:1}
-.modal-close:hover{color:#f87171}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-group{display:flex;flex-direction:column;gap:5px}
-.form-group.full{grid-column:1/-1}
-.form-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:1px}
-.form-input,.form-select,.form-textarea{background:#0a0a14;border:1px solid #2d2d4e;border-radius:7px;color:#e2e8f0;padding:7px 11px;font-size:13px;font-family:inherit;transition:border-color .15s;width:100%}
-.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:#7c3aed}
-.form-textarea{resize:vertical;min-height:60px}
-.form-select option{background:#13131f}
-.players-check{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
-.player-chip{font-size:12px;padding:4px 10px;border-radius:20px;border:1px solid #2d2d4e;cursor:pointer;user-select:none;color:#888;transition:all .15s}
-.player-chip.selected{background:#1e1040;border-color:#7c3aed;color:#c4b5fd}
-.role-entries{display:flex;flex-direction:column;gap:5px;margin-top:3px}
-.role-entry{display:grid;grid-template-columns:1fr 1fr 90px 24px;gap:5px;align-items:center}
-.role-entry .form-select{padding:5px 8px;font-size:12px}
-.add-role-btn{font-size:12px;color:#7c3aed;border:1px dashed #2d2d4e;background:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:3px;text-align:left}
-.add-role-btn:hover{border-color:#7c3aed;background:#1e1040}
-.remove-role-btn{font-size:18px;color:#374151;border:none;background:none;cursor:pointer;line-height:1;transition:color .15s;text-align:center}
-.remove-role-btn:hover{color:#f87171}
-.btn-primary{background:#7c3aed;border:none;color:#fff;padding:8px 22px;border-radius:7px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500;transition:background .15s}
-.btn-primary:hover{background:#6d28d9}
-.btn-secondary{background:transparent;border:1px solid #2d2d4e;color:#888;padding:8px 14px;border-radius:7px;font-size:13px;font-family:inherit;cursor:pointer;transition:all .15s}
-.btn-secondary:hover{border-color:#555;color:#ccc}
-.form-actions{display:flex;gap:8px;margin-top:4px}
-.setup-box{display:flex;flex-direction:column;gap:12px;max-width:480px}
-.setup-hint{font-size:12px;color:#64748b;line-height:1.6}
-.setup-hint a{color:#a78bfa}
-.setup-hint code{background:#0a0a14;padding:2px 6px;border-radius:4px;font-size:11px;color:#c4b5fd}
-.login-box{display:flex;flex-direction:column;gap:10px}
-.toast{position:fixed;bottom:20px;right:20px;background:#1e1040;border:1px solid #7c3aed;color:#c4b5fd;padding:9px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
-.toast.show{opacity:1}
-.sync-status{font-size:11px;color:#374151;font-family:monospace}
-.sync-ok{color:#16a34a}.sync-err{color:#ef4444}.sync-load{color:#64748b}
-.hidden{display:none!important}
+/* Базовые настройки стиля в тон досье */
+*,*::before,*::after {box-sizing:border-box; margin:0; padding:0}
+body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background-color: #0b0b12;
+    background-image: linear-gradient(rgba(45, 45, 78, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 45, 78, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    color:#e2e8f0;
+    min-height:100vh;
+    padding:32px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.container {
+    width:100%;
+    max-width:1100px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Шапка архива */
+.header-bar {
+    background: linear-gradient(90deg, #0a0a14, #13131f);
+    padding:14px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border:1px solid #2d2d4e;
+    border-radius:14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+.header-left {display:flex; align-items:center; gap:14px}
+.logo-img {
+    height:36px; width:36px; object-fit:contain; 
+    border-radius:50%; border:1px solid #2d2d4e; background: #000;
+}
+.stamp {font-size:12px; color:#ef4444; letter-spacing:2px; text-transform:uppercase; font-weight:bold;}
+.nav-link {
+    color: #a78bfa; text-decoration: none; font-size: 13px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 1px; border: 1px solid #7c3aed33;
+    padding: 6px 16px; border-radius: 20px; transition: all 0.2s;
+    background: rgba(124, 58, 237, 0.05);
+}
+.nav-link:hover { background: #1e1040; border-color: #7c3aed; box-shadow: 0 0 10px rgba(124,58,237,0.3); }
+
+/* Основной макет: Форма слева, Контент справа */
+.main-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 24px;
+}
+@media (max-width: 900px) {
+    .main-layout { grid-template-columns: 1fr; }
+}
+
+/* Панели/Карточки */
+.card {
+    background:#13131f;
+    border:1px solid #2d2d4e;
+    border-radius:14px;
+    padding: 24px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+.card-title {
+    font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#64748b; 
+    margin-bottom:18px; display:flex; align-items:center; gap:8px;
+}
+.card-title::before {content:''; display:block; width:4px; height:12px; background:#7c3aed; border-radius:2px;}
+
+/* Стили формы ввода */
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 11px; color: #64748b; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+.form-input, .form-select {
+    width: 100%; background: #0b0b12; border: 1px solid #2d2d4e; border-radius: 8px;
+    padding: 10px 12px; color: #f8fafc; font-size: 13px; font-family: inherit; transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus { border-color: #7c3aed; outline: none; }
+
+/* Динамические строки ролей игроков */
+.roles-title-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 10px; color: #475569; text-transform: uppercase; }
+.role-entry { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+.role-entry .form-select, .role-entry .form-input { padding: 8px; font-size: 12px; }
+.btn-remove {
+    background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; 
+    padding: 0 4px; transition: color 0.2s;
+}
+.btn-remove:hover { color: #f87171; }
+
+.btn-secondary {
+    width: 100%; background: rgba(255,255,255,0.03); border: 1px dashed #2d2d4e;
+    color: #94a3b8; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px;
+    transition: all 0.2s; margin-bottom: 16px;
+}
+.btn-secondary:hover { border-color: #64748b; color: #f1f5f9; background: rgba(255,255,255,0.05); }
+
+.btn-primary {
+    width: 100%; background: #7c3aed; color: #fff; border: none; padding: 12px;
+    border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;
+}
+.btn-primary:hover { background: #6d28d9; box-shadow: 0 0 12px rgba(124,58,237,0.4); }
+
+/* Табы переключения страниц */
+.tab-row { display: flex; gap: 12px; border-bottom: 1px solid #2d2d4e; margin-bottom: 20px; padding-bottom: 1px;}
+.tab {
+    font-size: 12px; padding: 10px 18px; cursor: pointer; color: #64748b; background: none;
+    border: none; border-bottom: 2px solid transparent; font-family: inherit; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s;
+}
+.tab:hover { color: #cbd5e1; }
+.tab.active { color: #a78bfa; border-bottom-color: #7c3aed; }
+
+/* Таблица статистики ролей */
+.stats-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+.stats-table th { color: #64748b; font-size: 11px; text-transform: uppercase; padding: 12px 8px; border-bottom: 1px solid #2d2d4e; letter-spacing: 0.5px;}
+.stats-table td { padding: 12px 8px; border-bottom: 1px solid #1e1e2f; color: #cbd5e1; }
+.stats-table tr:hover td { background: rgba(255,255,255,0.01); }
+.badge-game { background: #1e1040; color: #c4b5fd; padding: 3px 8px; border-radius: 6px; font-size: 11px; border: 1px solid #7c3aed40; font-weight: 500;}
+.rate-bar-bg { width: 60px; height: 6px; background: #1e293b; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 8px; overflow: hidden; border: 1px solid #334155;}
+.rate-bar-fill { height: 100%; background: #16a34a; border-radius: 3px; }
+
+/* Карточки истории логов */
+.log-item {
+    background: #0f0f1a; border: 1px solid #2d2d4e; border-radius: 10px;
+    padding: 16px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px;
+    position: relative; transition: border-color 0.2s;
+}
+.log-item:hover { border-color: #4c1d95; }
+.log-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #2d2d4e; padding-bottom: 8px; }
+.log-title { font-size: 15px; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 8px; }
+.log-date { font-size: 12px; color: #64748b; font-family: monospace; }
+.log-winner { font-size: 12px; color: #86efac; background: rgba(5,46,22,0.5); padding: 2px 10px; border-radius: 12px; border: 1px solid #16a34a40;}
+.log-roles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; padding: 4px 0; }
+.log-player-pill {
+    background: rgba(30, 41, 59, 0.4); padding: 6px 10px; border-radius: 6px; font-size: 12px;
+    display: flex; justify-content: space-between; border: 1px solid #1e293b;
+}
+.log-notes { font-size: 12px; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.15); padding: 8px; border-radius: 6px; }
+.log-actions { position: absolute; right: 16px; bottom: 14px; display: flex; gap: 12px; }
+.action-btn { background: none; border: none; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;}
+.btn-edit { color: #60a5fa; } .btn-edit:hover { color: #93c5fd; }
+.btn-del { color: #f87171; } .btn-del:hover { color: #fca5a5; }
+
+.hidden { display: none !important; }
+.empty-text { color: #64748b; text-align: center; font-size: 13px; padding: 40px 0; }
 </style>
 </head>
 <body>
 
-<div class="header-bar">
-  <div class="header-left">
-    <img class="logo-img" src="data:image/jpeg;base64,''' + logo_b64 + '''" alt="logo">
-    <span class="stamp">&#11041; Игровой архив</span>
-  </div>
-  <div class="header-right">
-    <span class="sync-status sync-load" id="sync-status">● загрузка</span>
-    <span class="admin-badge" id="admin-badge">● Мастер</span>
-    <button class="nav-btn" id="auth-btn" onclick="handleAuthBtn()">Войти</button>
-    <a class="nav-btn" href="index.html">← Досье</a>
-  </div>
-</div>
-
 <div class="container">
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Общий винрейт</span>
-      <span style="font-size:11px;color:#444" id="total-label"></span>
+    <div class="header-bar">
+        <div class="header-left">
+            <img class="logo-img" src="logo.jpg" alt="logo" onerror="this.style.display='none'">
+            <span class="stamp">&#10059; Игровой архив — Аналитика</span>
+        </div>
+        <a href="index.html" class="nav-link">➔ В досье</a>
     </div>
-    <div class="card-body">
-      <div class="winrate-grid" id="winrate-grid"><div class="empty-state">Нет данных</div></div>
-    </div>
-  </div>
 
-  <div class="card">
-    <div class="card-header"><span class="card-title">Статистика по ролям</span></div>
-    <div class="card-body">
-      <div class="game-tabs" id="role-tabs"></div>
-      <div id="role-table-wrap"><div class="empty-state">Нет данных</div></div>
-    </div>
-  </div>
+    <div class="main-layout">
+        
+        <div class="card">
+            <div class="card-title" id="form-card-title">Регистрация партии</div>
+            <form id="game-form" onsubmit="event.preventDefault(); saveGame();">
+                <input type="hidden" id="edit-id" value="">
+                
+                <div class="form-group">
+                    <label class="form-label">Дата партии</label>
+                    <input type="date" id="g-date" class="form-input" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Настольная игра</label>
+                    <input type="text" id="g-name" class="form-input" placeholder="Например: Культ Хаоса, Мафия" required>
+                </div>
 
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">Архив партий</span>
-      <button class="btn-primary hidden" id="add-btn" onclick="openForm(null)" style="padding:5px 14px;font-size:12px">+ Добавить</button>
+                <div class="form-group">
+                    <label class="form-label">Победитель (Имя/Фракция)</label>
+                    <input type="text" id="g-winner" class="form-input" placeholder="Кто одержал верх" required>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label class="form-label" style="color: #a78bfa;">Распределение ролей</label>
+                    <div class="roles-title-row">
+                        <span style="flex: 1.2;">Игрок</span>
+                        <span style="flex: 1.5;">Роль</span>
+                        <span style="width: 75px; text-align: right; padding-right: 25px;">Исход</span>
+                    </div>
+                    <div id="roles-wrapper">
+                        </div>
+                    <button type="button" class="btn-secondary" onclick="addRoleRow()">+ Добавить игрока и роль</button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Заметки / Комментарии к партии</label>
+                    <input type="text" id="g-notes" class="form-input" placeholder="Краткое описание ключевых моментов">
+                </div>
+
+                <button type="submit" class="btn-primary" id="btn-submit-text">Сохранить в архив</button>
+            </form>
+        </div>
+
+        <div class="card" style="padding-top: 16px;">
+            <div class="tab-row">
+                <button class="tab active" id="tab-stats" onclick="switchTab('stats')">Статистика ролей</button>
+                <button class="tab" id="tab-log" onclick="switchTab('log')">Лог по дням</button>
+            </div>
+
+            <div id="view-stats">
+                <table class="stats-table">
+                    <thead>
+                        <tr>
+                            <th>Игра</th>
+                            <th>Игрок</th>
+                            <th>Роль</th>
+                            <th style="text-align: center;">Игр</th>
+                            <th style="text-align: center;">В / П</th>
+                            <th>Винрейт</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-tbody">
+                        </tbody>
+                </table>
+                <div id="stats-empty" class="empty-text hidden">Архив пуст. Зарегистрируйте первую партию!</div>
+            </div>
+
+            <div id="view-log" class="hidden">
+                <div id="log-wrapper">
+                    </div>
+            </div>
+
+        </div>
+
     </div>
-    <div class="card-body">
-      <div class="archive-filters">
-        <select class="filter-select" id="filter-game" onchange="renderArchive()">
-          <option value="">Все игры</option>
-          <option>Секретный Гитлер</option>
-          <option>Письма Призрака</option>
-          <option>Накорми Кракена</option>
-          <option>Доминион</option>
-        </select>
-        <select class="filter-select" id="filter-player" onchange="renderArchive()"><option value="">Все игроки</option></select>
-      </div>
-      <div id="archive-list"><div class="empty-state">Нет записей</div></div>
-    </div>
-  </div>
 </div>
-
-<!-- Game modal -->
-<div class="overlay hidden" id="modal-overlay" onclick="if(event.target===this)closeModalDirect()">
-  <div class="modal">
-    <div class="modal-title">
-      <span id="modal-title-text">Добавить партию</span>
-      <button class="modal-close" onclick="closeModalDirect()">×</button>
-    </div>
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Дата</label><input class="form-input" type="date" id="f-date"></div>
-      <div class="form-group"><label class="form-label">Игра</label>
-        <select class="form-select" id="f-game" onchange="updateRoleOptions()">
-          <option>Секретный Гитлер</option><option>Письма Призрака</option>
-          <option>Накорми Кракена</option><option>Доминион</option>
-        </select>
-      </div>
-      <div class="form-group full"><label class="form-label">Участники</label><div class="players-check" id="players-check"></div></div>
-      <div class="form-group full"><label class="form-label">Победитель / итог</label><input class="form-input" type="text" id="f-winner" placeholder="напр. Победа либералов, Победа — Медет"></div>
-      <div class="form-group full">
-        <label class="form-label">Роли игроков <span style="color:#444">(необязательно)</span></label>
-        <div class="role-entries" id="role-entries"></div>
-        <button class="add-role-btn" onclick="addRoleEntry()">+ Добавить роль</button>
-      </div>
-      <div class="form-group full"><label class="form-label">Заметки</label><textarea class="form-textarea" id="f-notes" placeholder="Любые комментарии..."></textarea></div>
-    </div>
-    <div class="form-actions">
-      <button class="btn-primary" id="save-btn" onclick="saveGame()">Сохранить</button>
-      <button class="btn-secondary" onclick="closeModalDirect()">Отмена</button>
-    </div>
-  </div>
-</div>
-
-<!-- Login modal -->
-<div class="overlay hidden" id="login-overlay" onclick="if(event.target===this)this.classList.add('hidden')">
-  <div class="modal" style="max-width:340px">
-    <div class="modal-title">
-      <span>Вход мастера</span>
-      <button class="modal-close" onclick="document.getElementById('login-overlay').classList.add('hidden')">×</button>
-    </div>
-    <div class="login-box">
-      <div class="form-group"><label class="form-label">Пароль</label>
-        <input class="form-input" type="password" id="pw-input" placeholder="Введите пароль" onkeydown="if(event.key==='Enter')doLogin()">
-      </div>
-      <div class="form-actions"><button class="btn-primary" onclick="doLogin()">Войти</button></div>
-      <div id="pw-error" style="font-size:12px;color:#f87171;display:none">Неверный пароль</div>
-    </div>
-  </div>
-</div>
-
-<!-- Setup modal (first run) -->
-<div class="overlay hidden" id="setup-overlay">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-title"><span>⚙ Настройка хранилища</span></div>
-    <div class="setup-box">
-      <p class="setup-hint">Для хранения данных используется <strong>JSONBin.io</strong> — бесплатный сервис. Нужно создать bin один раз:</p>
-      <p class="setup-hint">1. Откройте <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> → Sign Up (бесплатно)<br>
-      2. После входа: <strong>API Keys</strong> → скопируйте <code>Secret Key</code><br>
-      3. Нажмите кнопку ниже — bin создастся автоматически</p>
-      <div class="form-group"><label class="form-label">JSONBin Secret Key</label>
-        <input class="form-input" type="text" id="setup-key" placeholder="$2a$10$...">
-      </div>
-      <div class="form-actions">
-        <button class="btn-primary" onclick="doSetup()">Создать хранилище</button>
-      </div>
-      <div id="setup-error" style="font-size:12px;color:#f87171;display:none"></div>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-// ─── CONFIG — заполняется при первой настройке ───────────────────────────────
-const ADMIN_PASS = "master2026"; // смените пароль здесь
+// Список основных игроков (досье) для быстрого выбора в выпадающем меню
+const KNOWN_PLAYERS = ["Азирет", "Дияр", "Танай"];
 
-const PLAYERS = ["Медет","Никита","Танай","Азирет","Дияр","Ануар","Нурсултан","Смурф","Куттыбек","Еркебулан","Мирас","Алан"];
-const GAME_ROLES = {
-  "Секретный Гитлер": ["Либерал","Фашист","Гитлер"],
-  "Письма Призрака":  ["Призрак","Детектив","Эксперт","Свидетель","Убийца","Сообщник","Шантажист"],
-  "Накорми Кракена":  ["Пират","Моряк","Ктулху"],
-  "Доминион":         ["Победитель","Проигравший"]
-};
-const GAMES_LIST = Object.keys(GAME_ROLES);
-
-// ─── STATE ───────────────────────────────────────────────────────────────────
-let isAdmin = sessionStorage.getItem("is_admin") === "1";
-let games = [];
-let activeRoleGame = GAMES_LIST[0];
-let editingId = null;
-let BIN_ID = localStorage.getItem("jb_bin_id") || "";
-let API_KEY = localStorage.getItem("jb_api_key") || "";
-
-// ─── JSONBIN API ─────────────────────────────────────────────────────────────
-async function jbRead() {
-  const r = await fetch("https://api.jsonbin.io/v3/b/" + BIN_ID + "/latest", {
-    headers: { "X-Master-Key": API_KEY }
-  });
-  if (!r.ok) throw new Error("read failed " + r.status);
-  const j = await r.json();
-  return j.record.games || [];
+// Инициализируем хранилище демо-данными, если оно абсолютно пустое
+let games = JSON.parse(localStorage.getItem("board_games_log"));
+if (!games || games.length === 0) {
+    games = [
+        {
+            id: "demo-1", date: "2026-05-27", game: "Культ Хаоса", winner: "Азирет", notes: "Азирет блестяще разыграл карту Интриги на финальном ходу.",
+            roles: [
+                { player: "Азирет", role: "Лидер Культа", won: true },
+                { player: "Дияр", role: "Аналитик", won: false },
+                { player: "Танай", role: "Aide-de-camp", won: false }
+            ]
+        },
+        {
+            id: "demo-2", date: "2026-05-28", game: "Культ Хаоса", winner: "Танай", notes: "Дияр ушел в деструктивный коэффициент, подставив всех.",
+            roles: [
+                { player: "Азирет", role: "Вексель", won: false },
+                { player: "Дияр", role: "Деструктор", won: false },
+                { player: "Танай", role: "Утёнок", won: true }
+            ]
+        }
+    ];
+    localStorage.setItem("board_games_log", JSON.stringify(games));
 }
 
-async function jbWrite(data) {
-  const r = await fetch("https://api.jsonbin.io/v3/b/" + BIN_ID, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json", "X-Master-Key": API_KEY },
-    body: JSON.stringify({ games: data })
-  });
-  if (!r.ok) throw new Error("write failed " + r.status);
+// Установка текущей даты в календарь по умолчанию
+document.getElementById('g-date').valueAsDate = new Date();
+
+// Генерация строки ввода роли
+function addRoleRow(preset = null) {
+    const wrapper = document.getElementById("roles-wrapper");
+    const div = document.createElement("div");
+    div.className = "role-entry";
+    
+    // Опции выбора игроков
+    let playerOptions = KNOWN_PLAYERS.map(p => 
+        `<option value="${p}" ${preset && preset.player === p ? 'selected' : ''}>${p}</option>`
+    ).join("");
+    // Возможность написать кастомного игрока, если играют гости
+    playerOptions += `<option value="Другой" ${preset && !KNOWN_PLAYERS.includes(preset.player) ? 'selected' : ''}>[Другой]</option>`;
+
+    div.innerHTML = `
+        <select class="form-select role-player" style="flex: 1.2;">
+            ${playerOptions}
+        </select>
+        <input type="text" class="form-input role-name" placeholder="Напр. Волк, Мэр" value="${preset ? preset.role : ''}" style="flex: 1.5;" required>
+        <select class="form-select role-won" style="width: 85px;">
+            <option value="true" ${preset && preset.won === true ? 'selected' : ''}>Победа</option>
+            <option value="false" ${preset && preset.won === false ? 'selected' : ''}>Пораж.</option>
+        </select>
+        <button type="button" class="btn-remove" onclick="this.parentElement.remove()">&times;</button>
+    `;
+    wrapper.appendChild(div);
 }
 
-async function jbCreate(key) {
-  const r = await fetch("https://api.jsonbin.io/v3/b", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Master-Key": key, "X-Bin-Name": "boardgames", "X-Bin-Private": "false" },
-    body: JSON.stringify({ games: [] })
-  });
-  if (!r.ok) { const t = await r.text(); throw new Error(t); }
-  const j = await r.json();
-  return j.metadata.id;
-}
-
-// ─── SETUP ───────────────────────────────────────────────────────────────────
-async function doSetup() {
-  const key = document.getElementById("setup-key").value.trim();
-  const errEl = document.getElementById("setup-error");
-  if (!key) { errEl.style.display="block"; errEl.textContent="Введите Secret Key"; return; }
-  errEl.style.display="none";
-  try {
-    const id = await jbCreate(key);
-    localStorage.setItem("jb_bin_id", id);
-    localStorage.setItem("jb_api_key", key);
-    BIN_ID = id; API_KEY = key;
-    document.getElementById("setup-overlay").classList.add("hidden");
-    toast("Хранилище создано ✓ BIN ID: " + id);
-    setSync("ok"); renderAll();
-  } catch(e) {
-    errEl.style.display="block";
-    errEl.textContent = "Ошибка: " + e.message;
-  }
-}
-
-// ─── INIT ────────────────────────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded", async () => {
-  document.getElementById("f-date").value = new Date().toISOString().slice(0,10);
-  buildPlayersCheck(); addRoleEntry(); applyAdminUI();
-
-  if (!BIN_ID || !API_KEY) {
-    // Показываем setup только мастеру — обычные пользователи видят пустую статистику
-    // пока мастер не настроит. Показываем setup overlay только если хотим.
-    // Оставим пустой экран с подсказкой
-    setSync("err", "не настроено");
-    renderAll();
-    return;
-  }
-
-  setSync("load");
-  try {
-    games = await jbRead();
-    setSync("ok");
-  } catch(e) {
-    setSync("err", e.message);
-  }
-  renderAll();
-});
-
-function setSync(state, msg) {
-  const el = document.getElementById("sync-status");
-  if (state === "ok") { el.className="sync-status sync-ok"; el.textContent="● онлайн"; }
-  else if (state === "err") { el.className="sync-status sync-err"; el.textContent="● " + (msg||"ошибка"); }
-  else { el.className="sync-status sync-load"; el.textContent="● загрузка"; }
-}
-
-// ─── AUTH ────────────────────────────────────────────────────────────────────
-function handleAuthBtn() {
-  if (isAdmin) {
-    isAdmin = false; sessionStorage.removeItem("is_admin");
-    applyAdminUI(); toast("Вы вышли");
-  } else {
-    document.getElementById("login-overlay").classList.remove("hidden");
-    setTimeout(() => document.getElementById("pw-input").focus(), 100);
-  }
-}
-
-function doLogin() {
-  const pw = document.getElementById("pw-input").value;
-  if (pw === ADMIN_PASS) {
-    isAdmin = true; sessionStorage.setItem("is_admin","1");
-    document.getElementById("login-overlay").classList.add("hidden");
-    document.getElementById("pw-input").value = "";
-    document.getElementById("pw-error").style.display = "none";
-    applyAdminUI(); renderAll(); toast("Добро пожаловать, мастер ✓");
-    // Если нет bin — показать setup
-    if (!BIN_ID || !API_KEY) {
-      document.getElementById("setup-overlay").classList.remove("hidden");
+// Сохранение и создание партии
+function saveGame() {
+    const idField = document.getElementById("edit-id").value;
+    const date = document.getElementById("g-date").value;
+    const game = document.getElementById("g-name").value.trim();
+    const winner = document.getElementById("g-winner").value.trim();
+    const notes = document.getElementById("g-notes").value.trim();
+    
+    const roleRows = document.querySelectorAll(".role-entry");
+    if(roleRows.length === 0) {
+        alert("Добавьте хотя бы одного игрока и роль!");
+        return;
     }
-  } else {
-    document.getElementById("pw-error").style.display = "block";
-  }
-}
 
-function applyAdminUI() {
-  document.getElementById("admin-badge").style.display = isAdmin ? "inline-block" : "none";
-  document.getElementById("add-btn").classList.toggle("hidden", !isAdmin);
-  document.getElementById("auth-btn").textContent = isAdmin ? "Выйти" : "Войти";
-  renderArchive();
-}
-
-// ─── RENDER ──────────────────────────────────────────────────────────────────
-function renderAll() { renderWinrate(); renderRoleTabs(); renderRoleTable(activeRoleGame); renderArchive(); updateFilterPlayer(); }
-
-function renderWinrate() {
-  const stats = {};
-  PLAYERS.forEach(p => stats[p]={w:0,g:0});
-  games.forEach(g => {
-    const seen = new Set();
-    (g.roles||[]).forEach(r => {
-      const k = r.player+"_"+g.id;
-      if(seen.has(k)) return; seen.add(k);
-      if(!stats[r.player]) stats[r.player]={w:0,g:0};
-      stats[r.player].g++; if(r.won) stats[r.player].w++;
+    const rolesData = [];
+    roleRows.forEach(row => {
+        const player = row.querySelector(".role-player").value;
+        const role = row.querySelector(".role-name").value.trim();
+        const won = row.querySelector(".role-won").value === "true";
+        rolesData.push({ player, role, won });
     });
-    if(!(g.roles||[]).length) (g.players||[]).forEach(p=>{ if(!stats[p])stats[p]={w:0,g:0}; stats[p].g++; });
-  });
-  const active = PLAYERS.filter(p=>stats[p]&&stats[p].g>0);
-  document.getElementById("total-label").textContent = games.length + " партий";
-  const grid = document.getElementById("winrate-grid");
-  if(!active.length){grid.innerHTML='<div class="empty-state">Нет данных</div>';return;}
-  grid.innerHTML = active.sort((a,b)=>(stats[b].g?stats[b].w/stats[b].g:0)-(stats[a].g?stats[a].w/stats[a].g:0)).map(p=>{
-    const s=stats[p],pct=s.g?Math.round(s.w/s.g*100):0;
-    const col=pct>=60?"#86efac":pct>=40?"#fbbf24":"#f87171";
-    return `<div class="wr-card"><div class="wr-name">${p}</div><div class="wr-pct" style="color:${col}">${pct}%</div>
-    <div class="wr-sub">${s.w}В / ${s.g-s.w}П / ${s.g}и</div>
-    <div class="wr-bar-wrap"><div class="wr-bar" style="width:${pct}%;background:${col}"></div></div></div>`;
-  }).join("");
+
+    if (idField) {
+        // Режим редактирования существующей записи
+        const index = games.findIndex(g => g.id === idField);
+        if (index !== -1) {
+            games[index] = { id: idField, date, game, winner, roles: rolesData, notes };
+        }
+    } else {
+        // Создание новой партии
+        const newGame = {
+            id: "game-" + Date.now(),
+            date, game, winner, roles: rolesData, notes
+        };
+        games.unshift(newGame);
+    }
+
+    localStorage.setItem("board_games_log", JSON.stringify(games));
+    
+    // Сброс формы в исходное состояние
+    document.getElementById("game-form").reset();
+    document.getElementById("edit-id").value = "";
+    document.getElementById("roles-wrapper").innerHTML = "";
+    document.getElementById('g-date').valueAsDate = new Date();
+    document.getElementById("btn-submit-text").textContent = "Сохранить в архив";
+    document.getElementById("form-card-title").textContent = "Регистрация партии";
+    document.getElementById("form-card-title").style.color = "";
+
+    // Первоначальное построение дефолтных пустых 3 строк для удобства
+    initBlankRows();
+    
+    // Обновляем таблицы на экране
+    renderAll();
 }
 
-function renderRoleTabs() {
-  document.getElementById("role-tabs").innerHTML = GAMES_LIST.map(g=>
-    `<button class="gtab${g===activeRoleGame?" active":""}" onclick="setRoleGame('${g}')">${g}</button>`
-  ).join("");
+// Заполнение формы дефолтными пустыми строками
+function initBlankRows() {
+    const wrapper = document.getElementById("roles-wrapper");
+    if(wrapper.children.length === 0) {
+        KNOWN_PLAYERS.forEach(p => addRoleRow({player: p, role: '', won: true}));
+    }
 }
-function setRoleGame(g){activeRoleGame=g;renderRoleTabs();renderRoleTable(g);}
 
-function renderRoleTable(gameName) {
-  const roles = GAME_ROLES[gameName]||[];
-  const wrap = document.getElementById("role-table-wrap");
-  const data = {};
-  PLAYERS.forEach(p=>{data[p]={};roles.forEach(r=>data[p][r]={w:0,l:0});});
-  games.filter(g=>g.game===gameName).forEach(g=>{
-    (g.roles||[]).forEach(re=>{
-      if(!data[re.player])data[re.player]={};
-      if(!data[re.player][re.role])data[re.player][re.role]={w:0,l:0};
-      if(re.won)data[re.player][re.role].w++; else data[re.player][re.role].l++;
+// Удаление партии
+function deleteGame(id) {
+    if(confirm("Вы действительно хотите удалить эту партию из истории?")) {
+        games = games.filter(g => g.id !== id);
+        localStorage.setItem("board_games_log", JSON.stringify(games));
+        renderAll();
+    }
+}
+
+// Запуск редактирования партии
+function setupEdit(id) {
+    const g = games.find(game => game.id === id);
+    if(!g) return;
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    document.getElementById("edit-id").value = g.id;
+    document.getElementById("g-date").value = g.date;
+    document.getElementById("g-name").value = g.game;
+    document.getElementById("g-winner").value = g.winner;
+    document.getElementById("g-notes").value = g.notes;
+
+    const wrapper = document.getElementById("roles-wrapper");
+    wrapper.innerHTML = "";
+    g.roles.forEach(r => addRoleRow(r));
+
+    document.getElementById("btn-submit-text").textContent = "Обновить партию";
+    document.getElementById("form-card-title").textContent = "Редактирование партии";
+    document.getElementById("form-card-title").style.color = "#60a5fa";
+}
+
+// Переключение вкладок аналитики
+function switchTab(tabType) {
+    document.getElementById("tab-stats").classList.toggle("active", tabType === 'stats');
+    document.getElementById("tab-log").classList.toggle("active", tabType === 'log');
+    document.getElementById("view-stats").classList.toggle("hidden", tabType !== 'stats');
+    document.getElementById("view-log").classList.toggle("hidden", tabType !== 'log');
+}
+
+// Построение и подсчет статистики ролей
+function renderStatsTable() {
+    const tbody = document.getElementById("stats-tbody");
+    const emptyMsg = document.getElementById("stats-empty");
+    tbody.innerHTML = "";
+
+    if (games.length === 0) {
+        emptyMsg.classList.remove("hidden");
+        return;
+    }
+    emptyMsg.classList.add("hidden");
+
+    // Карта для группировки: Ключ = "НазваниеИгры|||Игрок|||Роль"
+    const statsMap = {};
+
+    games.forEach(g => {
+        g.roles.forEach(r => {
+            const key = `${g.game}|||${r.player}|||${r.role}`;
+            if (!statsMap[key]) {
+                statsMap[key] = { gamesCount: 0, wins: 0, losses: 0 };
+            }
+            statsMap[key].gamesCount++;
+            if (r.won) statsMap[key].wins++;
+            else statsMap[key].losses++;
+        });
     });
-  });
-  const active=PLAYERS.filter(p=>roles.some(r=>data[p]&&data[p][r]&&(data[p][r].w+data[p][r].l)>0));
-  if(!active.length){wrap.innerHTML='<div class="empty-state">Нет данных по этой игре</div>';return;}
-  const roleHeaders=roles.map(r=>`<th colspan="2">${r}</th><th>%</th>`).join("")+"<th colspan='2' class='total-col'>Итого</th><th class='total-col'>%</th>";
-  const subHeaders=roles.map(()=>"<th>В</th><th>П</th><th></th>").join("")+"<th class='total-col'>В</th><th class='total-col'>П</th><th class='total-col'></th>";
-  const rows=active.map(p=>{
-    let tw=0,tl=0;
-    const cells=roles.map(r=>{
-      const s=data[p][r]||{w:0,l:0},tot=s.w+s.l;
-      tw+=s.w;tl+=s.l;
-      if(!tot)return`<td class="val-zero">—</td><td class="val-zero">—</td><td class="val-zero">—</td>`;
-      const pct=Math.round(s.w/tot*100),pc=pct>=60?"val-pos":pct>=40?"val-neu":"val-neg";
-      return`<td class="val-pos">${s.w}</td><td class="val-neg">${s.l}</td><td class="${pc}">${pct}%</td>`;
-    }).join("");
-    const tot=tw+tl,tpct=tot?Math.round(tw/tot*100):null,tc=tpct===null?"val-zero":tpct>=60?"val-pos":tpct>=40?"val-neu":"val-neg";
-    return`<tr><td>${p}</td>${cells}<td class="total-col val-pos">${tw||"—"}</td><td class="total-col val-neg">${tl||"—"}</td><td class="total-col ${tc}">${tpct!==null?tpct+"%":"—"}</td></tr>`;
-  }).join("");
-  wrap.innerHTML=`<div style="overflow-x:auto"><table class="role-table"><thead><tr><th></th>${roleHeaders}</tr><tr><th>Игрок</th>${subHeaders}</tr></thead><tbody>${rows}</tbody></table></div>`;
+
+    // Отрисовываем строки таблицы
+    for (let key in statsMap) {
+        const [gameName, playerName, roleName] = key.split("|||");
+        const s = statsMap[key];
+        const winRate = Math.round((s.wins / s.gamesCount) * 100);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><span class="badge-game">${gameName}</span></td>
+            <td style="font-weight:600; color:#f8fafc;">${playerName}</td>
+            <td style="font-family:monospace; color:#a78bfa;">${roleName}</td>
+            <td style="text-align: center; font-weight:bold;">${s.gamesCount}</td>
+            <td style="text-align: center; font-family:monospace;">
+                <span style="color:#86efac;">${s.wins}</span> / <span style="color:#f87171;">${s.losses}</span>
+            </td>
+            <td>
+                <div class="rate-bar-bg">
+                    <div class="rate-bar-fill" style="width: ${winRate}%; background: ${winRate >= 50 ? '#16a34a' : '#ef4444'}"></div>
+                </div>
+                <span style="font-family:monospace; font-weight:bold;">${winRate}%</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
 }
 
-function renderArchive() {
-  const fg=document.getElementById("filter-game").value,fp=document.getElementById("filter-player").value;
-  let filtered=games.filter(g=>(!fg||g.game===fg)&&(!fp||(g.players||[]).includes(fp)||(g.roles||[]).some(r=>r.player===fp)));
-  filtered=[...filtered].sort((a,b)=>b.date.localeCompare(a.date));
-  const list=document.getElementById("archive-list");
-  if(!filtered.length){list.innerHTML='<div class="empty-state">Нет записей</div>';return;}
-  const byDate={};
-  filtered.forEach(g=>{if(!byDate[g.date])byDate[g.date]=[];byDate[g.date].push(g);});
-  list.innerHTML=Object.keys(byDate).sort((a,b)=>b.localeCompare(a)).map(date=>{
-    const entries=byDate[date].map(g=>{
-      const rolesHtml=(g.roles||[]).map(r=>`${r.player}: <span style="color:${r.won?"#86efac":"#f87171"}">${r.role} ${r.won?"✓":"✗"}</span>`).join(" · ");
-      const adminBtns=isAdmin?`<div class="log-actions">
-        <button class="log-btn" onclick="openForm('${g.id}')">✎ изменить</button>
-        <button class="log-btn del" onclick="deleteGame('${g.id}')">✕</button></div>`:"";
-      return`<div class="game-log">
-        <div class="log-top"><span class="log-game-name">${g.game}</span>${adminBtns}</div>
-        <div class="log-players">Участники: ${(g.players||[]).join(", ")||"—"}</div>
-        <div class="log-result">Итог: <strong>${g.winner||"—"}</strong></div>
-        ${rolesHtml?`<div class="log-roles">${rolesHtml}</div>`:""}
-        ${g.notes?`<div class="log-notes">${g.notes}</div>`:""}
-      </div>`;
-    }).join("");
-    return`<div class="session-block"><div class="session-date-label">${formatDate(date)}</div>${entries}</div>`;
-  }).join("");
+// Отрисовка хронологического лога партий
+function renderHistoryLog() {
+    const wrapper = document.getElementById("log-wrapper");
+    wrapper.innerHTML = "";
+
+    if (games.length === 0) {
+        wrapper.innerHTML = `<div class="empty-text">История пуста. Добавьте записи слева.</div>`;
+        return;
+    }
+
+    games.forEach(g => {
+        // Переформатирование даты в понятный вид
+        const dateObj = new Date(g.date);
+        const formattedDate = isNaN(dateObj) ? g.date : dateObj.toLocaleDateString("ru-RU", {day: "2-digit", month: "2-digit", year: "numeric"});
+
+        const item = document.createElement("div");
+        item.className = "log-item";
+
+        const rolesHtml = g.roles.map(r => `
+            <div class="log-player-pill">
+                <span style="font-weight:500;">${r.player} <span style="color:#64748b; font-size:11px; font-family:monospace;">(${r.role})</span></span>
+                <span style="color: ${r.won ? '#86efac' : '#f87171'}; font-weight:bold;">${r.won ? '✓' : '✗'}</span>
+            </div>
+        `).join("");
+
+        item.innerHTML = `
+            <div class="log-top">
+                <div class="log-title">
+                    <span class="badge-game">${g.game}</span>
+                    <span class="log-date">${formattedDate}</span>
+                </div>
+                <div class="log-winner">Победитель: ${g.winner}</div>
+            </div>
+            <div class="log-roles-grid">
+                ${rolesHtml}
+            </div>
+            ${g.notes ? `<div class="log-notes">${g.notes}</div>` : ''}
+            <div class="log-actions">
+                <button class="action-btn btn-edit" onclick="setupEdit('${g.id}')">Редактировать</button>
+                <button class="action-btn btn-del" onclick="deleteGame('${g.id}')">Удалить</button>
+            </div>
+        `;
+        wrapper.appendChild(item);
+    });
 }
 
-function formatDate(d){const[y,m,day]=d.split("-");const mo=["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];return`${parseInt(day)} ${mo[parseInt(m)-1]} ${y}`;}
-
-function updateFilterPlayer(){
-  const sel=document.getElementById("filter-player"),cur=sel.value;
-  const all=[...new Set(games.flatMap(g=>g.players||[]))].sort();
-  sel.innerHTML="<option value=''>Все игроки</option>"+all.map(p=>`<option${p===cur?" selected":""}>${p}</option>`).join("");
+function renderAll() {
+    renderStatsTable();
+    renderHistoryLog();
 }
 
-async function deleteGame(id){
-  if(!isAdmin)return;
-  if(!confirm("Удалить эту запись?"))return;
-  games=games.filter(g=>g.id!==id);
-  await persist(); renderAll(); toast("Запись удалена");
-}
-
-async function persist(){
-  setSync("load");
-  try{await jbWrite(games);setSync("ok");}
-  catch(e){setSync("err",e.message);toast("Ошибка сохранения: "+e.message);}
-}
-
-// ─── FORM ────────────────────────────────────────────────────────────────────
-function buildPlayersCheck(){
-  document.getElementById("players-check").innerHTML=PLAYERS.map(p=>
-    `<span class="player-chip" data-player="${p}" onclick="this.classList.toggle('selected')">${p}</span>`
-  ).join("");
-}
-function getSelectedPlayers(){return[...document.querySelectorAll(".player-chip.selected")].map(e=>e.dataset.player);}
-
-function openForm(id){
-  if(!isAdmin)return;
-  editingId=id;
-  document.getElementById("modal-title-text").textContent=id?"Изменить партию":"Добавить партию";
-  document.getElementById("save-btn").textContent=id?"Сохранить изменения":"Сохранить";
-  document.querySelectorAll(".player-chip").forEach(c=>c.classList.remove("selected"));
-  document.getElementById("role-entries").innerHTML="";
-  document.getElementById("f-notes").value="";
-  document.getElementById("f-winner").value="";
-  document.getElementById("f-date").value=new Date().toISOString().slice(0,10);
-  document.getElementById("f-game").value=GAMES_LIST[0];
-  updateRoleOptions(); addRoleEntry();
-  if(id){
-    const g=games.find(x=>x.id===id); if(!g)return;
-    document.getElementById("f-date").value=g.date;
-    document.getElementById("f-game").value=g.game;
-    document.getElementById("f-winner").value=g.winner||"";
-    document.getElementById("f-notes").value=g.notes||"";
-    (g.players||[]).forEach(p=>{const el=document.querySelector(`.player-chip[data-player="${p}"]`);if(el)el.classList.add("selected");});
-    document.getElementById("role-entries").innerHTML="";
-    (g.roles||[]).length ? (g.roles||[]).forEach(r=>addRoleEntry(r)) : addRoleEntry();
-  }
-  document.getElementById("modal-overlay").classList.remove("hidden");
-}
-function closeModalDirect(){document.getElementById("modal-overlay").classList.add("hidden");editingId=null;}
-
-function updateRoleOptions(){
-  const roles=GAME_ROLES[document.getElementById("f-game").value]||[];
-  document.querySelectorAll(".role-select").forEach(sel=>{const cur=sel.value;sel.innerHTML=roles.map(r=>`<option${r===cur?" selected":""}>${r}</option>`).join("");});
-}
-
-function addRoleEntry(preset){
-  const roles=GAME_ROLES[document.getElementById("f-game").value]||[];
-  const wrap=document.getElementById("role-entries");
-  const div=document.createElement("div");div.className="role-entry";
-  div.innerHTML=`
-    <select class="form-select role-player">${PLAYERS.map(p=>`<option${preset&&preset.player===p?" selected":""}>${p}</option>`).join("")}</select>
-    <select class="form-select role-select">${roles.map(r=>`<option${preset&&preset.role===r?" selected":""}>${r}</option>`).join("")}</select>
-    <select class="form-select role-won">
-      <option value="1"${preset&&preset.won?" selected":""}>✓ Победа</option>
-      <option value="0"${preset&&preset.won===false?" selected":""}>✗ Пораж.</option>
-    </select>
-    <button class="remove-role-btn" onclick="this.parentElement.remove()">×</button>`;
-  wrap.appendChild(div);
-}
-
-async function saveGame(){
-  const date=document.getElementById("f-date").value,game=document.getElementById("f-game").value;
-  const winner=document.getElementById("f-winner").value.trim(),notes=document.getElementById("f-notes").value.trim();
-  const players=getSelectedPlayers();
-  if(!date||!game){toast("Укажите дату и игру");return;}
-  const roles=[...document.querySelectorAll(".role-entry")].map(row=>({
-    player:row.querySelector(".role-player").value,
-    role:row.querySelector(".role-select").value,
-    won:row.querySelector(".role-won").value==="1"
-  }));
-  if(editingId){
-    const idx=games.findIndex(g=>g.id===editingId);
-    if(idx!==-1)games[idx]={...games[idx],date,game,players,winner,roles,notes};
-    toast("Изменения сохранены ✓");
-  } else {
-    games.unshift({id:Date.now()+"",date,game,players,winner,roles,notes});
-    toast("Партия добавлена ✓");
-  }
-  await persist(); closeModalDirect(); renderAll();
-}
-
-function toast(msg){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),2800);}
+// Полный запуск страницы
+initBlankRows();
+renderAll();
 </script>
+
 </body>
-</html>'''
+</html>
