@@ -50,6 +50,9 @@ body {
 }
 .stamp {font-size:11px; color:#ef4444; letter-spacing:2px; text-transform:uppercase; font-weight:bold;}
 .header-date {font-size:12px; color:#64748b; font-family:monospace; letter-spacing: 1px;}
+.header-right {display:flex; align-items:center; gap:14px;}
+.nav-link {font-size:11px; color:#64748b; padding:4px 12px; border:1px solid #2d2d4e; border-radius:20px; text-decoration:none; letter-spacing:1px; transition:all .2s ease;}
+.nav-link:hover {color:#c4b5fd; border-color:#7c3aed;}
 
 /* Выбор персонажа */
 .selector-row {display:flex; gap:10px; padding:14px 24px; border-bottom:1px solid #2d2d4e; flex-wrap:wrap; background:#0f0f1a}
@@ -181,7 +184,10 @@ canvas {display:block; margin-top: 10px;}
       <img class="logo-img" src="Img/logo.jpg" alt="logo">
       <span class="stamp">&#11041; Личное дело &#8212; Секретно</span>
     </div>
-    <span class="header-date" id="doc-date">02/02/2026</span>
+    <div class="header-right">
+      <a class="nav-link" href="stats.html">Статистика →</a>
+      <span class="header-date" id="doc-date">02/02/2026</span>
+    </div>
   </div>
   
   <div class="selector-row">
