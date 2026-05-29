@@ -164,7 +164,8 @@ a { color: #a78bfa; text-decoration: none; }
     </div>
     <div class="header-right">
         <span id="sync-status" class="sync-pill"><span class="sync-dot"></span><span id="sync-text">Загрузка…</span></span>
-        <a href="index.html" class="nav-btn">← Досье</a>
+        <button type="button" class="nav-btn" onclick="forceRefresh()" title="Загрузить свежие данные">↻</button>
+        <a href="https://stellarsnowfall.github.io/Dossier/" class="nav-btn">← Досье</a>
     </div>
 </div>
 
@@ -253,37 +254,47 @@ a { color: #a78bfa; text-decoration: none; }
 <!-- Modal: settings (games + players) -->
 <div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSettingsModal()">
     <div class="modal">
-        <h3>Настройки архива</h3>
-        <p style="font-size:12px;color:#64748b;margin-bottom:14px;">PIN: <code style="color:#a78bfa">1234</code></p>
-        <div id="settings-lock">
-            <input type="password" id="settings-pass" class="form-input" placeholder="PIN модератора" style="margin-bottom:10px;">
-            <button class="btn-action" onclick="unlockSettings()">Войти</button>
+        <h3>Игроки и игры</h3>
+        <div class="field">
+            <label class="stamp">Игроки (по одному в строке)</label>
+            <textarea id="cfg-players" class="form-input" rows="4" style="resize:vertical;"></textarea>
         </div>
-        <div id="settings-body" class="hidden">
-            <div class="field">
-                <label class="stamp">Игроки (по одному в строке)</label>
-                <textarea id="cfg-players" class="form-input" rows="4" style="resize:vertical;"></textarea>
-            </div>
-            <div class="field">
-                <label class="stamp">Игры — формат: <code>Название | Роль1, Роль2</code></label>
-                <textarea id="cfg-games" class="form-input" rows="6" style="resize:vertical;font-family:monospace;font-size:12px;"></textarea>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-action secondary" onclick="closeSettingsModal()">Отмена</button>
-                <button type="button" class="btn-action" onclick="saveSettings()">Сохранить в облако</button>
-            </div>
+        <div class="field">
+            <label class="stamp">Игры — формат: <code>Название | Роль1, Роль2</code></label>
+            <textarea id="cfg-games" class="form-input" rows="6" style="resize:vertical;font-family:monospace;font-size:12px;"></textarea>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-action secondary" onclick="closeSettingsModal()">Отмена</button>
+            <button type="button" class="btn-action" onclick="saveSettings()">Сохранить</button>
         </div>
     </div>
 </div>
 
 <script>
-// ── JSONBin (ключи — вынесите в отдельный бэкенд для продакшена) ──
+// ═══════════════════════════════════════════════════════════════════════════
+// ХРАНИЛИЩЕ — выберите один backend (см. комментарии ниже)
+// ═══════════════════════════════════════════════════════════════════════════
+// 'jsonbin'  — уже настроено; с кэшем ≈1 запрос на человека за сессию, не на каждый F5
+// 'supabase' — рекомендуется для GitHub Pages: без лимита 10k, все видят одни данные
+// 'github'   — только чтение из data/archive.json в репозитории (редактировать нельзя с сайта)
+const STORAGE = 'jsonbin';
+
 const BIN_ID = '6a19516421f9ee59d298c40c';
 const API_KEY = '$2a$10$BQqbVX0PNe3qvydalu6fY.42sB0PTWdxvPWbx4RVscVOnfank0A6W';
-const MOD_PIN = '1234';
+
+// Supabase: создайте таблицу (SQL в конце файла), вставьте URL и anon key:
+const SUPABASE_URL = '';
+const SUPABASE_KEY = '';
+
+// Путь к JSON в репозитории (для GitHub Pages: положите data/archive.json в Dossier/)
+const GITHUB_DATA_URL = './data/archive.json';
+
+// Не дергать JSONBin чаще чем раз в N минут (кнопка ↻ обновляет принудительно)
+const CACHE_MINUTES = 60;
+const CACHE_KEY = 'dossier_archive_v2';
 
 const DEFAULT_STATE = {
-    players: ['Medet', 'Nikita', 'Tanay', 'Aziret'],
+    players: ['Азирет', 'Дияр', 'Танай'],
     games: [
         { name: 'Секретный Гитлер', roles: ['Либерал', 'Фашист', 'Гитлер'] },
         { name: 'Письма Призрака', roles: ['Призрак', 'Детектив', 'Убийца'] },
@@ -296,14 +307,6 @@ const DEFAULT_STATE = {
 let STATE = structuredClone(DEFAULT_STATE);
 let activeGameIndex = 0;
 let editingSessionId = null;
-
-function apiHeaders(json = false) {
-    const h = { 'X-Bin-Meta': 'false' };
-    if (json) h['Content-Type'] = 'application/json';
-    if (API_KEY.startsWith('$2a$') || API_KEY.startsWith('$2b$')) h['X-Master-Key'] = API_KEY;
-    else h['X-Access-Key'] = API_KEY;
-    return h;
-}
 
 function setSyncStatus(ok, text) {
     const el = document.getElementById('sync-status');
@@ -326,39 +329,181 @@ function normalizeLoaded(raw) {
     return structuredClone(DEFAULT_STATE);
 }
 
-async function loadCloudData() {
+function readCache() {
     try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, { headers: apiHeaders() });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || `HTTP ${res.status}`);
-        }
-        const result = await res.json();
-        STATE = normalizeLoaded(result.record ?? result);
-        setSyncStatus(true, 'Мастер');
-        document.getElementById('page-loader').classList.add('hidden');
-        document.getElementById('page-content').classList.remove('hidden');
-        refreshAll();
-    } catch (e) {
-        setSyncStatus(false, 'Failed to fetch');
-        document.getElementById('page-loader').textContent =
-            `Ошибка подключения: ${e.message}. Проверьте BIN_ID, ключ и CORS в панели JSONBin.`;
-        console.error(e);
-    }
+        const raw = sessionStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const { savedAt, data } = JSON.parse(raw);
+        if (Date.now() - savedAt > CACHE_MINUTES * 60 * 1000) return null;
+        return data;
+    } catch { return null; }
 }
 
-async function pushToCloud() {
-    const headers = apiHeaders(true);
+function writeCache(data) {
+    try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ savedAt: Date.now(), data }));
+    } catch { /* quota */ }
+}
+
+function jsonbinHeaders(json = false) {
+    const h = { 'X-Bin-Meta': 'false' };
+    if (json) h['Content-Type'] = 'application/json';
+    if (API_KEY.startsWith('$2a$') || API_KEY.startsWith('$2b$')) h['X-Master-Key'] = API_KEY;
+    else h['X-Access-Key'] = API_KEY;
+    return h;
+}
+
+function supabaseHeaders(json = false) {
+    const h = {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`
+    };
+    if (json) h['Content-Type'] = 'application/json';
+    return h;
+}
+
+async function fetchJsonbin() {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, { headers: jsonbinHeaders() });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `JSONBin ${res.status}`);
+    }
+    const result = await res.json();
+    return normalizeLoaded(result.record ?? result);
+}
+
+async function saveJsonbin() {
+    const headers = jsonbinHeaders(true);
     headers['X-Bin-Versioning'] = 'false';
     const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
         method: 'PUT', headers, body: JSON.stringify(STATE)
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || `HTTP ${res.status}`);
+        throw new Error(err.message || `JSONBin ${res.status}`);
     }
-    setSyncStatus(true, 'Мастер');
 }
+
+async function fetchSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        throw new Error('Заполните SUPABASE_URL и SUPABASE_KEY в начале скрипта');
+    }
+    const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/archive?id=eq.1&select=data`,
+        { headers: supabaseHeaders() }
+    );
+    if (!res.ok) throw new Error(`Supabase ${res.status}`);
+    const rows = await res.json();
+    if (!rows.length) return structuredClone(DEFAULT_STATE);
+    return normalizeLoaded(rows[0].data);
+}
+
+async function saveSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+        throw new Error('Заполните SUPABASE_URL и SUPABASE_KEY');
+    }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/archive?id=eq.1`, {
+        method: 'PATCH',
+        headers: { ...supabaseHeaders(true), Prefer: 'return=minimal' },
+        body: JSON.stringify({ data: STATE, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `Supabase ${res.status}`);
+    }
+}
+
+async function fetchGithubJson() {
+    const res = await fetch(GITHUB_DATA_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`Файл ${GITHUB_DATA_URL} не найден (${res.status})`);
+    return normalizeLoaded(await res.json());
+}
+
+async function fetchRemote(force = false) {
+    if (STORAGE === 'github') return fetchGithubJson();
+    if (STORAGE === 'supabase') return fetchSupabase();
+    if (!force) {
+        const cached = readCache();
+        if (cached) return cached;
+    }
+    const data = await fetchJsonbin();
+    writeCache(data);
+    return data;
+}
+
+async function saveRemote() {
+    if (STORAGE === 'github') {
+        throw new Error('Режим github — только чтение. Переключите STORAGE на jsonbin или supabase.');
+    }
+    if (STORAGE === 'supabase') await saveSupabase();
+    else await saveJsonbin();
+    writeCache(STATE);
+}
+
+function showPage() {
+    document.getElementById('page-loader').classList.add('hidden');
+    document.getElementById('page-content').classList.remove('hidden');
+}
+
+async function loadCloudData(force = false) {
+    const cached = !force && readCache();
+    if (cached) {
+        STATE = cached;
+        showPage();
+        refreshAll();
+        setSyncStatus(true, 'Кэш · общий архив');
+    }
+
+    try {
+        const fresh = await fetchRemote(force);
+        STATE = fresh;
+        writeCache(fresh);
+        showPage();
+        refreshAll();
+        const labels = { jsonbin: 'JSONBin', supabase: 'Supabase', github: 'GitHub' };
+        setSyncStatus(true, labels[STORAGE] || 'Онлайн');
+    } catch (e) {
+        if (cached) {
+            setSyncStatus(false, 'Офлайн · кэш');
+            console.warn(e);
+            return;
+        }
+        setSyncStatus(false, 'Нет связи');
+        document.getElementById('page-loader').textContent =
+            `Не удалось загрузить архив: ${e.message}`;
+        console.error(e);
+    }
+}
+
+function forceRefresh() {
+    sessionStorage.removeItem(CACHE_KEY);
+    document.getElementById('page-loader').classList.remove('hidden');
+    document.getElementById('page-loader').textContent = 'Обновление…';
+    loadCloudData(true).then(() => {
+        document.getElementById('page-loader').classList.add('hidden');
+    });
+}
+
+async function pushToCloud() {
+    await saveRemote();
+    const labels = { jsonbin: 'JSONBin', supabase: 'Supabase' };
+    setSyncStatus(true, labels[STORAGE] || 'Сохранено');
+}
+
+/*
+  Supabase — один раз в SQL Editor:
+
+  create table archive (
+    id int primary key default 1,
+    data jsonb not null default '{}',
+    updated_at timestamptz default now()
+  );
+  insert into archive (id, data) values (1, '{}');
+  alter table archive enable row level security;
+  create policy "friends read" on archive for select using (true);
+  create policy "friends write" on archive for update using (true);
+  create policy "friends insert" on archive for insert with check (id = 1);
+*/
 
 function refreshAll() {
     populateFilters();
@@ -688,7 +833,7 @@ async function saveSession() {
         refreshAll();
     } catch (e) {
         alert(`Ошибка сохранения: ${e.message}`);
-        await loadCloudData();
+        await loadCloudData(true);
     }
 }
 
@@ -700,32 +845,20 @@ async function deleteSession(id) {
         refreshAll();
     } catch (e) {
         alert(`Ошибка: ${e.message}`);
-        await loadCloudData();
+        await loadCloudData(true);
     }
 }
 
 // ── Settings: dynamic games & players ──
 function openSettingsModal() {
+    document.getElementById('cfg-players').value = STATE.players.join('\n');
+    document.getElementById('cfg-games').value = STATE.games
+        .map(g => `${g.name} | ${g.roles.join(', ')}`).join('\n');
     document.getElementById('settings-modal').classList.remove('hidden');
-    document.getElementById('settings-lock').classList.remove('hidden');
-    document.getElementById('settings-body').classList.add('hidden');
-    document.getElementById('settings-pass').value = '';
 }
 
 function closeSettingsModal() {
     document.getElementById('settings-modal').classList.add('hidden');
-}
-
-function unlockSettings() {
-    if (document.getElementById('settings-pass').value !== MOD_PIN) {
-        alert('Неверный PIN.');
-        return;
-    }
-    document.getElementById('settings-lock').classList.add('hidden');
-    document.getElementById('settings-body').classList.remove('hidden');
-    document.getElementById('cfg-players').value = STATE.players.join('\n');
-    document.getElementById('cfg-games').value = STATE.games
-        .map(g => `${g.name} | ${g.roles.join(', ')}`).join('\n');
 }
 
 function parseGamesText(text) {
