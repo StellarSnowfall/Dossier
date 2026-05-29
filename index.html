@@ -44,9 +44,9 @@ body {
 .header-left {display:flex; align-items:center; gap:12px}
 .logo-img {
     height:38px; width:38px; 
-    object-fit: contain; /* Логотип помещается полностью */
+    object-fit: contain;
     border-radius:50%; border:1px solid #2d2d4e;
-    background: #000;
+    background: transparent;
 }
 .stamp {font-size:11px; color:#ef4444; letter-spacing:2px; text-transform:uppercase; font-weight:bold;}
 .header-date {font-size:12px; color:#64748b; font-family:monospace; letter-spacing: 1px;}
@@ -67,21 +67,22 @@ body {
 /* Профиль */
 .top-section {display:grid; grid-template-columns:180px 1fr; border-bottom:1px solid #2d2d4e}
 .photo-area {
-    background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a14 100%);
+    background: transparent;
     display:flex; flex-direction:column; align-items:center; justify-content:center; 
     padding:24px 16px; border-right:1px solid #2d2d4e;
 }
 .avatar-circle {
     width:130px; height:130px; border-radius:50%; border:2.5px solid #7c3aed; 
     overflow:hidden; display:flex; align-items:center; justify-content:center;
-    background: #09090e; /* Стильный темный фон, если пропорции фото отличаются */
+    background: transparent;
     box-shadow: 0 0 15px rgba(124,58,237,0.25);
     transition: border-color 0.4s;
 }
 .avatar-circle img {
     width:100%; height:100%; 
-    object-fit: contain; /* Профиль помещается полностью и не обрезается */
+    object-fit: contain;
     display:block;
+    background: transparent;
 }
 
 .id-section {padding:24px; display:flex; flex-direction:column; justify-content: center; gap:14px}
@@ -171,8 +172,13 @@ canvas {display:block; margin-top: 10px;}
     background:#0a0a14; border-top:1px solid #2d2d4e; padding:10px 24px; 
     display:flex; justify-content:space-between; align-items:center;
 }
-.footer-note {font-size:11px; color:#ef4444; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;}
+.footer-note {font-size:11px; color:#94a3b8; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;}
 .footer-id {font-size:12px; font-family:monospace; color:#64748b; letter-spacing: 2px;}
+.risk-critical { color: #450a0a; text-shadow: 0 0 8px #ef4444; font-weight: 800; }
+.risk-high { color: #ef4444; font-weight: 700; }
+.risk-medium { color: #facc15; font-weight: 700; }
+.risk-low { color: #4ade80; font-weight: 700; }
+.risk-minimal { color: #22d3ee; font-weight: 700; }
 
 .hidden {display:none!important}
 </style>
@@ -190,11 +196,7 @@ canvas {display:block; margin-top: 10px;}
     </div>
   </div>
   
-  <div class="selector-row">
-    <button class="selector-btn active" onclick="loadChar(0)">Азирет</button>
-    <button class="selector-btn" onclick="loadChar(1)">Дияр</button>
-    <button class="selector-btn" onclick="loadChar(2)">Танай</button>
-  </div>
+  <div class="selector-row" id="selector-row"></div>
 
   <div class="top-section">
     <div class="photo-area">
@@ -248,9 +250,57 @@ canvas {display:block; margin-top: 10px;}
 </div>
 
 <script>
+const RISK = {
+  critical: { label: 'критический', cls: 'risk-critical' },
+  high:     { label: 'высокий',     cls: 'risk-high' },
+  medium:   { label: 'средний',     cls: 'risk-medium' },
+  low:      { label: 'низкий',      cls: 'risk-low' },
+  minimal:  { label: 'минимальный', cls: 'risk-minimal' }
+};
+
 const chars = [
   {
+    name:"Медет", color:"#dc2626", img:"Img/medet.png", date:"05/29/2026", faction:"Инициатор хаоса",
+    risk:"high",
+    traits:[{label:"Темпо-игрок",cls:"trait-orange",idx:0},{label:"Риск-тейкер",cls:"trait-purple",idx:1}],
+    stats:[{name:"Адекватность",val:1,color:"#a78bfa"},{name:"Скилл",val:3,color:"#60a5fa"},{name:"Интрига",val:1,color:"#f472b6"},{name:"Орешки",val:0,color:"#34d399"},{name:"Стойкость",val:2,color:"#fbbf24"},{name:"Убеждение",val:1,color:"#fb923c"}],
+    bg:"Часто задаёт темп за столом: быстро принимает решения и не боится ломать чужие планы. Вне игры — спокойный, но за партией превращается в двигатель событий.",
+    motiv:"Выиграть красиво и громко. Не терпит затяжных «ничьих».", links:"Никита — постоянный соперник. Танай — уважаемый оппонент.",
+    traitBlocks:[
+      {title:"Темпо-игрок",cls:"orange",titleColor:"#fdba74",desc:"Ускоряет ход партии, провоцируя ранние столкновения и рискованные размены. Союзники либо успевают за ним, либо остаются в тени."},
+      {title:"Риск-тейкер",cls:"purple",titleColor:"#c4b5fd",desc:"Склонен выбирать линию с максимальным потенциалом, даже если вероятность провала заметна."}
+    ],
+    id:"ID: MDT-001"
+  },
+  {
+    name:"Никита", color:"#2563eb", img:"Img/nikita.png", date:"05/29/2026", faction:"Тактик",
+    risk:"medium",
+    traits:[{label:"Аналитик",cls:"trait-blue",idx:0},{label:"Хладнокровие",cls:"trait-green",idx:1}],
+    stats:[{name:"Адекватность",val:2,color:"#a78bfa"},{name:"Скилл",val:2,color:"#60a5fa"},{name:"Интрига",val:2,color:"#f472b6"},{name:"Орешки",val:1,color:"#34d399"},{name:"Стойкость",val:1,color:"#fbbf24"},{name:"Убеждение",val:0,color:"#fb923c"}],
+    bg:"Любит разбирать партии постфактум и запоминать паттерны. Редко импровизирует — чаще играет по заранее продуманной схеме.",
+    motiv:"Понять систему игры глубже остальных.", links:"Медет — соперник. Азирет — осторожное наблюдение.",
+    traitBlocks:[
+      {title:"Аналитик",cls:"blue",titleColor:"#93c5fd",desc:"Замечает слабые места в стратегии оппонентов и подстраивает ходы под вероятные сценарии."},
+      {title:"Хладнокровие",cls:"green",titleColor:"#86efac",desc:"Сохраняет ясность под давлением; редко совершает импульсивные ошибки."}
+    ],
+    id:"ID: NKT-002"
+  },
+  {
+    name:"Танай", color:"#16a34a", img:"Img/tanay.jpg", date:"04/02/2026", faction:"Порядок",
+    risk:"medium",
+    traits:[{label:"Aide-de-camp",cls:"trait-green",idx:0},{label:"Утёнок",cls:"trait-blue",idx:1}],
+    stats:[{name:"Адекватность",val:3,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:0,color:"#f472b6"},{name:"Орешки",val:2,color:"#34d399"},{name:"Стойкость",val:0,color:"#fbbf24"},{name:"Убеждение",val:3,color:"#fb923c"}],
+    bg:"Происходит из семьи военных администраторов. С детства обучена действовать в рамках системы. Внутреннее равновесие — её главный инструмент влияния.",
+    motiv:"Поддерживать устойчивость системы вокруг себя. Лояльность как ценность.", links:"Азирет — объект наблюдения. Дияр — неизвестно.",
+    traitBlocks:[
+      {title:"Aide-de-camp",cls:"green",titleColor:"#86efac",desc:"Занимает ключевую позицию, действуя в соответствии с высшим порядком. Внутреннее равновесие делает её слова весомыми."},
+      {title:"Утёнок",cls:"blue",titleColor:"#93c5fd",desc:"Иррациональный зов позволяет внутреннему хаосу выйти наружу, действуя на чистом импульсе."}
+    ],
+    id:"ID: TNY-003"
+  },
+  {
     name:"Азирет", color:"#7c3aed", img:"Img/aziret.png", date:"02/02/2026", faction:"Культ Хаоса",
+    risk:"high",
     traits:[{label:"Лидер Культа",cls:"trait-purple",idx:0},{label:"Вексель",cls:"trait-green",idx:1}],
     stats:[{name:"Адекватность",val:2,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:3,color:"#f472b6"},{name:"Орешки",val:-1,color:"#34d399"},{name:"Стойкость",val:0,color:"#fbbf24"},{name:"Убеждение",val:2,color:"#fb923c"}],
     bg:"Вырос в закрытой общине, где с детства учился управлять вниманием толпы. Рано понял, что слова важнее кулаков. Не имеет фиксированных убеждений — только интерес к влиянию и хаосу.",
@@ -259,10 +309,11 @@ const chars = [
       {title:"Лидер Культа",cls:"purple",titleColor:"#c4b5fd",desc:"Способен воздействовать на разум человека. Формирует вокруг себя круг людей, которые перенимают его оценки и решения как ориентир. Не имеет точной цели или мотивации."},
       {title:"Вексель",cls:"green",titleColor:"#86efac",desc:"Добровольно принятый обет долга, ставший внутренней мерой ответственности. Служит скрытым ориентиром, влияющим на решения и поступки носителя."}
     ],
-    footerNote:"Уровень риска: высокий", id:"ID: AZR-001"
+    id:"ID: AZR-004"
   },
   {
     name:"Дияр", color:"#ea580c", img:"Img/diyar.jpg", date:"03/02/2026", faction:"Независимый",
+    risk:"critical",
     traits:[{label:"Независтливый",cls:"trait-green",idx:0},{label:"Деструктивный К.",cls:"trait-orange",idx:1}],
     stats:[{name:"Адекватность",val:1,color:"#a78bfa"},{name:"Скилл",val:2,color:"#60a5fa"},{name:"Интрига",val:-1,color:"#f472b6"},{name:"Орешки",val:-5,color:"#34d399"},{name:"Стойкость",val:-2,color:"#fbbf24"},{name:"Убеждение",val:-1,color:"#fb923c"}],
     bg:"Бывший аналитик, разочаровавшийся в системе. Не признаёт чужих успехов значимыми — это даёт ему холодный взгляд на мир. Действует методично, но часто ожидает худшего исхода.",
@@ -271,21 +322,112 @@ const chars = [
       {title:"Деструктивный Коэффициент",cls:"orange",titleColor:"#fdba74",desc:"Искажение вероятностей, при котором любая система начинает вести себя так, словно ожидает худшего исхода. Чем сильнее влияние — тем ниже точность действий."},
       {title:"Независтливый",cls:"green",titleColor:"#86efac",desc:"Не считает чужие достижения значимыми. То, что обычно вызывает зависть, для него воплощает пустоту — позволяет действовать без оглядки на чужие успехи."}
     ],
-    footerNote:"Уровень риска: критический", id:"ID: DYR-002"
+    id:"ID: DYR-005"
   },
   {
-    name:"Танай", color:"#16a34a", img:"Img/tanay.jpg", date:"04/02/2026", faction:"Порядок",
-    traits:[{label:"Aide-de-camp",cls:"trait-green",idx:0},{label:"Утёнок",cls:"trait-blue",idx:1}],
-    stats:[{name:"Адекватность",val:3,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:0,color:"#f472b6"},{name:"Орешки",val:2,color:"#34d399"},{name:"Стойкость",val:0,color:"#fbbf24"},{name:"Убеждение",val:3,color:"#fb923c"}],
-    bg:"Происходит из семьи военных администраторов. С детства обучена действовать в рамках системы. Внутреннее равновесие — её главный инструмент влияния.",
-    motiv:"Поддерживать устойчивость системы вокруг себя. Лояльность как ценность.", links:"Азирет — объект наблюдения. Дияр — неизвестно.",
+    name:"Ануар", color:"#0891b2", img:"Img/anuar.png", date:"05/29/2026", faction:"Дипломат",
+    risk:"low",
+    traits:[{label:"Миротворец",cls:"trait-green",idx:0},{label:"Гибкий",cls:"trait-blue",idx:1}],
+    stats:[{name:"Адекватность",val:3,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:1,color:"#f472b6"},{name:"Орешки",val:2,color:"#34d399"},{name:"Стойкость",val:2,color:"#fbbf24"},{name:"Убеждение",val:2,color:"#fb923c"}],
+    bg:"Предпочитает сглаживать конфликты за столом. Часто становится неформальным посредником между спорящими игроками.",
+    motiv:"Сохранить группу целой после любой партии.", links:"Нурсултан — союзник. Смурф — нейтральная зона.",
     traitBlocks:[
-      {title:"Aide-de-camp",cls:"green",titleColor:"#86efac",desc:"Занимает ключевую позицию, действуя в соответствии с высшим порядком. Внутреннее равновесие делает её слова весомыми и позволяет сохранять устойчивость, не поддаваясь хаосу."},
-      {title:"Утёнок",cls:"blue",titleColor:"#93c5fd",desc:"Иррациональный зов позволяет внутреннему хаосу выйти наружу, действуя на чистом импульсе. Контроль носителя снижается, что делает его более склонным к риску."}
+      {title:"Миротворец",cls:"green",titleColor:"#86efac",desc:"Снижает эскалацию конфликтов, находя компромиссы, выгодные большинству."},
+      {title:"Гибкий",cls:"blue",titleColor:"#93c5fd",desc:"Легко меняет тактику под расклад, не цепляясь за первоначальный план."}
     ],
-    footerNote:"Уровень риска: средний", id:"ID: TNY-003"
+    id:"ID: ANR-006"
+  },
+  {
+    name:"Нурсултан", color:"#ca8a04", img:"Img/nursultan.png", date:"05/29/2026", faction:"Стабилизатор",
+    risk:"low",
+    traits:[{label:"Надёжный",cls:"trait-green",idx:0},{label:"Тихая сила",cls:"trait-blue",idx:1}],
+    stats:[{name:"Адекватность",val:2,color:"#a78bfa"},{name:"Скилл",val:2,color:"#60a5fa"},{name:"Интрига",val:0,color:"#f472b6"},{name:"Орешки",val:3,color:"#34d399"},{name:"Стойкость",val:3,color:"#fbbf24"},{name:"Убеждение",val:1,color:"#fb923c"}],
+    bg:"Не стремится быть в центре внимания, но его присутствие заметно стабилизирует стол. Редко идёт на открытый риск.",
+    motiv:"Играть ровно и предсказуемо, без лишних потрясений.", links:"Ануар — доверенное лицо. Еркебулан — соперник по стилю.",
+    traitBlocks:[
+      {title:"Надёжный",cls:"green",titleColor:"#86efac",desc:"Союзники могут рассчитывать на выполнение данного слова, даже в ущерб личной выгоде."},
+      {title:"Тихая сила",cls:"blue",titleColor:"#93c5fd",desc:"Влияет на исход партии без явного доминирования — через терпение и точный тайминг."}
+    ],
+    id:"ID: NRS-007"
+  },
+  {
+    name:"Смурф", color:"#3b82f6", img:"Img/smurf.png", date:"05/29/2026", faction:"Хаотичный нейтрал",
+    risk:"medium",
+    traits:[{label:"Непредсказуемый",cls:"trait-purple",idx:0},{label:"Юмор-щит",cls:"trait-orange",idx:1}],
+    stats:[{name:"Адекватность",val:2,color:"#a78bfa"},{name:"Скилл",val:0,color:"#60a5fa"},{name:"Интрига",val:2,color:"#f472b6"},{name:"Орешки",val:1,color:"#34d399"},{name:"Стойкость",val:1,color:"#fbbf24"},{name:"Убеждение",val:2,color:"#fb923c"}],
+    bg:"Использует шутки и абсурд, чтобы сбить с толку оппонентов. За внешней легкомысленностью скрывается неплохое чутьё на слабые места.",
+    motiv:"Развлечься и оставить стол в хорошем настроении — даже если проиграл.", links:"Куттыбек — напарник по хаосу. Мирас — зеркало.",
+    traitBlocks:[
+      {title:"Непредсказуемый",cls:"purple",titleColor:"#c4b5fd",desc:"Действия сложно просчитать заранее; оппоненты тратят ресурсы на ложные угрозы."},
+      {title:"Юмор-щит",cls:"orange",titleColor:"#fdba74",desc:"Снимает напряжение и смягчает негатив после жёстких ходов."}
+    ],
+    id:"ID: SMF-008"
+  },
+  {
+    name:"Куттыбек", color:"#b45309", img:"Img/kuttybek.png", date:"05/29/2026", faction:"Агрессор",
+    risk:"high",
+    traits:[{label:"Прессинг",cls:"trait-orange",idx:0},{label:"Прямолинейный",cls:"trait-green",idx:1}],
+    stats:[{name:"Адекватность",val:0,color:"#a78bfa"},{name:"Скилл",val:2,color:"#60a5fa"},{name:"Интрига",val:-1,color:"#f472b6"},{name:"Орешки",val:-2,color:"#34d399"},{name:"Стойкость",val:2,color:"#fbbf24"},{name:"Убеждение",val:-1,color:"#fb923c"}],
+    bg:"Предпочитает открытое давление вместо тонких интриг. Быстро выходит из себя, если партия идёт не по его сценарию.",
+    motiv:"Доминировать за столом, даже ценой репутации.", links:"Смурф — союзник по настроению. Медет — соперник.",
+    traitBlocks:[
+      {title:"Прессинг",cls:"orange",titleColor:"#fdba74",desc:"Заставляет оппонентов реагировать на его темп, сужая пространство для спокойной игры."},
+      {title:"Прямолинейный",cls:"green",titleColor:"#86efac",desc:"Редко прячет намерения — что упрощает чтение, но делает его угрозу очевидной."}
+    ],
+    id:"ID: KTB-009"
+  },
+  {
+    name:"Еркебулан", color:"#64748b", img:"Img/erkebulan.png", date:"05/29/2026", faction:"Оборонительный блок",
+    risk:"minimal",
+    traits:[{label:"Терпеливый",cls:"trait-green",idx:0},{label:"Контроль зоны",cls:"trait-blue",idx:1}],
+    stats:[{name:"Адекватность",val:3,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:-2,color:"#f472b6"},{name:"Орешки",val:3,color:"#34d399"},{name:"Стойкость",val:3,color:"#fbbf24"},{name:"Убеждение",val:0,color:"#fb923c"}],
+    bg:"Играет «длинные» партии: выжидает, копит ресурсы и бьёт в конце. Не любит суету и ранние обвинения.",
+    motiv:"Дожить до финала с максимальным преимуществом.", links:"Нурсултан — уважение. Дияр — антипод.",
+    traitBlocks:[
+      {title:"Терпеливый",cls:"green",titleColor:"#86efac",desc:"Не спешит раскрывать силу; выигрывает за счёт выносливости и дисциплины."},
+      {title:"Контроль зоны",cls:"blue",titleColor:"#93c5fd",desc:"Удерживает ключевые позиции, ограничивая манёвр противника."}
+    ],
+    id:"ID: ERB-010"
+  },
+  {
+    name:"Мирас", color:"#db2777", img:"Img/miras.png", date:"05/29/2026", faction:"Интриган",
+    risk:"high",
+    traits:[{label:"Двойная игра",cls:"trait-purple",idx:0},{label:"Харизма",cls:"trait-orange",idx:1}],
+    stats:[{name:"Адекватность",val:1,color:"#a78bfa"},{name:"Скилл",val:2,color:"#60a5fa"},{name:"Интрига",val:4,color:"#f472b6"},{name:"Орешки",val:0,color:"#34d399"},{name:"Стойкость",val:-1,color:"#fbbf24"},{name:"Убеждение",val:3,color:"#fb923c"}],
+    bg:"Легко заводит контакты за столом и быстро меняет союзы. Его сложно «прочитать» до самого финала.",
+    motiv:"Остаться в выигрыше, даже сменив сторону дважды за вечер.", links:"Смурф — хаос-партнёр. Азирет — родственный дух.",
+    traitBlocks:[
+      {title:"Двойная игра",cls:"purple",titleColor:"#c4b5fd",desc:"Может поддерживать скрытый второй план, пока открыто играет в пользу стола."},
+      {title:"Харизма",cls:"orange",titleColor:"#fdba74",desc:"Убеждает других доверять ему в критические моменты."}
+    ],
+    id:"ID: MRS-011"
+  },
+  {
+    name:"Алан", color:"#14b8a6", img:"Img/alan.png", date:"05/29/2026", faction:"Новичок с потенциалом",
+    risk:"minimal",
+    traits:[{label:"Быстро учится",cls:"trait-green",idx:0},{label:"Чистая игра",cls:"trait-blue",idx:1}],
+    stats:[{name:"Адекватность",val:2,color:"#a78bfa"},{name:"Скилл",val:1,color:"#60a5fa"},{name:"Интрига",val:0,color:"#f472b6"},{name:"Орешки",val:2,color:"#34d399"},{name:"Стойкость",val:1,color:"#fbbf24"},{name:"Убеждение",val:1,color:"#fb923c"}],
+    bg:"Относительно недавно в группе, но быстро схватывает правила и мета. Играет честно и редко лезет в грязные схемы.",
+    motiv:"Догнать ветеранов по уровню, не потеряв уважение стола.", links:"Никита — наставник. Танай — ориентир.",
+    traitBlocks:[
+      {title:"Быстро учится",cls:"green",titleColor:"#86efac",desc:"Переносит уроки прошлой партии в следующую быстрее среднего."},
+      {title:"Чистая игра",cls:"blue",titleColor:"#93c5fd",desc:"Избегает токсичных ходов; репутация надёжного игрока работает на него."}
+    ],
+    id:"ID: ALN-012"
   }
 ];
+
+function renderRiskFooter(riskKey) {
+  const r = RISK[riskKey] || RISK.medium;
+  return `Уровень риска: <span class="${r.cls}">${r.label}</span>`;
+}
+
+function initSelectors() {
+  const row = document.getElementById('selector-row');
+  row.innerHTML = chars.map((c, i) =>
+    `<button type="button" class="selector-btn${i === 0 ? ' active' : ''}" onclick="loadChar(${i})">${c.name}</button>`
+  ).join('');
+}
 
 let currentTab="stats";
 
@@ -320,7 +462,7 @@ function loadChar(i) {
   document.getElementById("char-bg").textContent = c.bg;
   document.getElementById("char-motiv").textContent = c.motiv;
   document.getElementById("char-links").textContent = c.links;
-  document.getElementById("footer-note").textContent = c.footerNote;
+  document.getElementById("footer-note").innerHTML = renderRiskFooter(c.risk || 'medium');
   document.getElementById("footer-id").textContent = c.id;
   
   document.getElementById("stat-rows").innerHTML = c.stats.map(s => {
@@ -431,6 +573,7 @@ function drawRadar(c) {
   });
 }
 
+initSelectors();
 loadChar(0);
 </script>
 </body>
