@@ -58,10 +58,10 @@ a { color: #a78bfa; text-decoration: none; }
     padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 4px;
 }
 .win-card .name { font-size: 15px; font-weight: 700; color: #f8fafc; }
-.win-card .pct { font-size: 32px; font-weight: 800; line-height: 1.1; color: #4ade80; }
-.win-card .sub { font-size: 12px; color: #64748b; font-family: monospace; margin-bottom: 10px; }
+.win-card .pct { font-size: 32px; font-weight: 800; line-height: 1.1; }
+.win-card .sub { font-size: 12px; color: #e2e8f0; font-family: monospace; margin-bottom: 10px; }
 .win-card .bar { height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
-.win-card .bar-fill { height: 100%; background: #4ade80; border-radius: 2px; transition: width 0.4s ease; }
+.win-card .bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
 
 /* ── Game pills ── */
 .pills-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
@@ -122,7 +122,7 @@ a { color: #a78bfa; text-decoration: none; }
 .log-roles { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; }
 .log-role-line { color: #cbd5e1; }
 .log-role-line .won { color: #4ade80; }
-.log-role-line .lost { color: #94a3b8; }
+.log-role-line .lost { color: #f97373; }
 .log-notes { font-size: 12px; color: #64748b; font-style: italic; margin-top: 8px; }
 
 /* ── Modal ── */
@@ -293,12 +293,30 @@ const CACHE_MINUTES = 60;
 const CACHE_KEY = 'dossier_archive_v2';
 
 const DEFAULT_STATE = {
-    players: ['Азирет', 'Дияр', 'Танай'],
+    players: [
+        'Медет',
+        'Никита',
+        'Танай',
+        'Азирет',
+        'Дияр',
+        'Ануар',
+        'Нурсултан',
+        'Смурф',
+        'Куттыбек',
+        'Еркебулан',
+        'Мирас',
+        'Алан'
+    ],
     games: [
         { name: 'Секретный Гитлер', roles: ['Либерал', 'Фашист', 'Гитлер'] },
-        { name: 'Письма Призрака', roles: ['Призрак', 'Детектив', 'Убийца'] },
-        { name: 'Накорми Кракена', roles: ['Матрос', 'Пират', 'Сектант'] },
-        { name: 'Доминион', roles: ['Игрок'] }
+        {
+            name: 'Письма Призрака',
+            roles: ['Призрак', 'Детектив', 'Эксперт', 'Свидетель', 'Убийца', 'Сообщник', 'Шантажист']
+        },
+        { name: 'Судный день', roles: ['Человек', 'Машина', 'Изгой', 'Легион', 'Павший'] },
+        { name: 'Доминион', roles: [] },
+        { name: 'Накорми Кракена', roles: ['Моряк', 'Пират', 'Ктулху'] },
+        { name: 'Манчкин', roles: [] }
     ],
     sessions: []
 };
@@ -543,13 +561,22 @@ function renderWinrate() {
     STATE.players.forEach(name => {
         const c = counts[name];
         const pct = c.t ? Math.round((c.w / c.t) * 100) : 0;
+        let color;
+        if (pct >= 65) color = '#4ade80';       // ярко-зелёный
+        else if (pct >= 45) color = '#facc15';  // жёлто-оранжевый
+        else color = '#fb7185';                 // красный
+
         const card = document.createElement('div');
         card.className = 'win-card';
         card.innerHTML = `
             <div class="name">${name}</div>
-            <div class="pct">${pct}%</div>
-            <div class="sub">${c.w}В / ${c.l}П / ${c.t}и</div>
-            <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="pct" style="color:${color}">${pct}%</div>
+            <div class="sub">
+                <span style="color:#4ade80">${c.w}В</span>
+                <span style="color:#fb7185; margin-left:4px;">${c.l}П</span>
+                <span style="color:#64748b; margin-left:4px;">${c.t}и</span>
+            </div>
+            <div class="bar"><div class="bar-fill" style="width:${pct}%; background:${color}; box-shadow:0 0 6px ${color}80;"></div></div>
         `;
         root.appendChild(card);
     });
@@ -582,6 +609,13 @@ function cellStats(map, player, role) {
     const l = s.t - s.w;
     const pct = Math.round((s.w / s.t) * 100);
     return { w: s.w, l, pct: `${pct}%`, raw: pct };
+}
+
+function pctColor(raw) {
+    if (raw === null || raw === undefined) return '#64748b';
+    if (raw >= 65) return '#4ade80';      // высокий — зелёный
+    if (raw >= 45) return '#facc15';      // средний — жёлтый/оранжевый
+    return '#fb7185';                     // низкий — красный
 }
 
 function renderRoleMatrix() {
@@ -631,14 +665,21 @@ function renderRoleMatrix() {
             const st = cellStats(map, player, role);
             if (st.raw !== null) { totalT += map[`${player}|||${role}`].t; totalW += map[`${player}|||${role}`].w; }
             const dash = v => v === '—' ? '<span class="dash">—</span>' : v;
-            cells += `<td class="group">${dash(st.w)}</td><td class="group">${dash(st.l)}</td><td class="group pct-cell">${dash(st.pct)}</td>`;
+            const pctClr = pctColor(st.raw);
+            cells += `
+                <td class="group" style="color:#4ade80;">${dash(st.w)}</td>
+                <td class="group" style="color:#fb7185;">${dash(st.l)}</td>
+                <td class="group pct-cell" style="color:${pctClr};">${dash(st.pct)}</td>
+            `;
         });
 
         const totL = totalT - totalW;
-        const totPct = totalT ? `${Math.round((totalW / totalT) * 100)}%` : '—';
-        cells += `<td class="group">${totalT ? totalW : '<span class="dash">—</span>'}</td>`;
-        cells += `<td class="group">${totalT ? totL : '<span class="dash">—</span>'}</td>`;
-        cells += `<td class="group pct-cell">${totalT ? totPct : '<span class="dash">—</span>'}</td>`;
+        const totRaw = totalT ? Math.round((totalW / totalT) * 100) : null;
+        const totPct = totalT ? `${totRaw}%` : '—';
+        const totClr = pctColor(totRaw);
+        cells += `<td class="group" style="color:#4ade80;">${totalT ? totalW : '<span class="dash">—</span>'}</td>`;
+        cells += `<td class="group" style="color:#fb7185;">${totalT ? totL : '<span class="dash">—</span>'}</td>`;
+        cells += `<td class="group pct-cell" style="color:${totClr};">${totalT ? totPct : '<span class="dash">—</span>'}</td>`;
 
         const tr = document.createElement('tr');
         tr.innerHTML = cells;
