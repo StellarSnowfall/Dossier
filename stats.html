@@ -5,31 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Статистика и Архив Партий</title>
 <style>
-/* Общие стили в тон основного досье */
-*,*::before,*::after {box-sizing:border-box; margin:0; padding:0}
+/* Базовые стили игрового архива */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #0b0b12;
     background-image: linear-gradient(rgba(45, 45, 78, 0.1) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(45, 45, 78, 0.1) 1px, transparent 1px);
+                      linear-gradient(90deg, rgba(45, 45, 78, 0.1) 1px, transparent 1px);
     background-size: 20px 20px;
-    color:#e2e8f0;
-    min-height:100vh;
-    padding:32px 20px;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 32px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
 }
-.container { width:100%; max-width:960px; display: flex; flex-direction: column; gap: 20px; }
+.container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; }
 
-/* Шапка */
+/* Шапка панели управления */
 .header-bar {
     background: linear-gradient(90deg, #0a0a14, #13131f);
-    padding:14px 24px; display:flex; justify-content:space-between; align-items:center;
-    border:1px solid #2d2d4e; border-radius:14px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid #2d2d4e; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
-.header-left {display:flex; align-items:center; gap:14px}
-.stamp {font-size:12px; color:#ef4444; letter-spacing:2px; text-transform:uppercase; font-weight:bold;}
+.stamp { font-size: 12px; color: #ef4444; letter-spacing: 2px; text-transform: uppercase; font-weight: bold; }
 .nav-link {
     color: #a78bfa; text-decoration: none; font-size: 13px; font-weight: 500;
     text-transform: uppercase; letter-spacing: 1px; border: 1px solid #7c3aed33;
@@ -37,11 +36,11 @@ body {
 }
 .nav-link:hover { background: #1e1040; border-color: #7c3aed; box-shadow: 0 0 10px rgba(124,58,237,0.3); }
 
-/* Основная карточка с табами */
-.card { background:#13131f; border:1px solid #2d2d4e; border-radius:14px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+/* Главный блок данных */
+.card { background: #13131f; border: 1px solid #2d2d4e; border-radius: 14px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
 
-/* Навигация по вкладкам (Разделение как на фото) */
-.tab-row { display: flex; gap: 8px; border-bottom: 1px solid #2d2d4e; margin-bottom: 24px; padding-bottom: 1px; flex-wrap: wrap; }
+/* Навигационные вкладки из референса */
+.tab-row { display: flex; gap: 6px; border-bottom: 1px solid #2d2d4e; margin-bottom: 24px; padding-bottom: 1px; flex-wrap: wrap; }
 .tab {
     font-size: 12px; padding: 12px 20px; cursor: pointer; color: #64748b; background: none;
     border: none; border-bottom: 2px solid transparent; font-family: inherit; font-weight: 600;
@@ -50,43 +49,42 @@ body {
 .tab:hover { color: #cbd5e1; }
 .tab.active { color: #a78bfa; border-bottom-color: #7c3aed; text-shadow: 0 0 8px rgba(167,139,250,0.3); }
 
-/* Таблицы данных */
+/* Стилизация интерактивных таблиц */
 .stats-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-.stats-table th { color: #64748b; font-size: 11px; text-transform: uppercase; padding: 14px 10px; border-bottom: 1px solid #2d2d4e; letter-spacing: 0.5px;}
-.stats-table td { padding: 14px 10px; border-bottom: 1px solid #1e1e2f; color: #cbd5e1; }
+.stats-table th { color: #64748b; font-size: 11px; text-transform: uppercase; padding: 14px 12px; border-bottom: 1px solid #2d2d4e; letter-spacing: 0.5px; }
+.stats-table td { padding: 14px 12px; border-bottom: 1px solid #1e1e2f; color: #cbd5e1; }
 .stats-table tr:hover td { background: rgba(255,255,255,0.01); }
-.badge-game { background: #1e1040; color: #c4b5fd; padding: 3px 8px; border-radius: 6px; font-size: 11px; border: 1px solid #7c3aed40; font-weight: 500;}
 
-/* Прогресс-бар винрейта */
-.rate-bar-bg { width: 70px; height: 6px; background: #1e293b; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 8px; overflow: hidden; border: 1px solid #334155;}
-.rate-bar-fill { height: 100%; }
+/* Компоненты винрейта */
+.badge-game { background: #1e1040; color: #c4b5fd; padding: 3px 8px; border-radius: 6px; font-size: 11px; border: 1px solid #7c3aed40; font-weight: 500; display: inline-block;}
+.rate-bar-bg { width: 80px; height: 6px; background: #1e293b; border-radius: 3px; display: inline-block; vertical-align: middle; margin-right: 10px; overflow: hidden; border: 1px solid #334155; }
+.rate-bar-fill { height: 100%; min-width: 4px; }
 
-/* Элементы архива партий */
-.log-item { background: #0f0f1a; border: 1px solid #2d2d4e; border-radius: 10px; padding: 18px; margin-bottom: 16px; position: relative; }
+/* Карточки из лога дней */
+.log-item { background: #0f0f1a; border: 1px solid #2d2d4e; border-radius: 10px; padding: 18px; margin-bottom: 16px; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
 .log-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #2d2d4e; padding-bottom: 10px; margin-bottom: 12px; }
 .log-title { font-size: 15px; font-weight: 600; color: #f8fafc; display: flex; align-items: center; gap: 10px; }
 .log-date { font-size: 12px; color: #64748b; font-family: monospace; }
-.log-winner { font-size: 12px; color: #86efac; background: rgba(5,46,22,0.5); padding: 3px 12px; border-radius: 12px; border: 1px solid #16a34a40;}
-.log-roles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
-.log-player-pill { background: rgba(30, 41, 59, 0.4); padding: 8px 12px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; border: 1px solid #1e293b; }
-.log-notes { font-size: 12px; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; margin-top: 12px; border-left: 3px solid #475569; }
+.log-winner { font-size: 12px; color: #86efac; background: rgba(5,46,22,0.4); padding: 3px 12px; border-radius: 12px; border: 1px solid #16a34a33; font-weight: 500; }
+.log-roles-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+.log-player-pill { background: rgba(30, 41, 59, 0.3); padding: 10px 14px; border-radius: 8px; font-size: 13px; display: flex; justify-content: space-between; border: 1px solid #1e293b; align-items: center;}
+.log-notes { font-size: 12px; color: #94a3b8; font-style: italic; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 6px; margin-top: 12px; border-left: 3px solid #4b5563; }
 
-/* Форма админки */
-.admin-lock-panel { text-align: center; padding: 40px 0; }
+/* Формы авторизации и добавления */
+.admin-lock-panel { text-align: center; padding: 50px 0; }
 .form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 11px; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
+.form-label { display: block; font-size: 11px; color: #64748b; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
 .form-input, .form-select { width: 100%; background: #0b0b12; border: 1px solid #2d2d4e; border-radius: 8px; padding: 10px 12px; color: #f8fafc; font-size: 13px; font-family: inherit; }
 .form-input:focus, .form-select:focus { border-color: #7c3aed; outline: none; }
 .role-entry { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
 .btn-primary { background: #7c3aed; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
 .btn-primary:hover { background: #6d28d9; box-shadow: 0 0 12px rgba(124,58,237,0.4); }
-.btn-secondary { background: rgba(255,255,255,0.03); border: 1px dashed #2d2d4e; color: #94a3b8; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; width: 100%; margin-bottom: 16px;}
-.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 20px; padding: 0 4px; }
-.output-box { background: #07070a; border: 1px dashed #22c55e; color: #22c55e; padding: 14px; font-family: monospace; font-size: 11px; border-radius: 8px; margin-top: 20px; overflow-x: auto; white-space: pre-wrap; word-break: break-all;}
+.btn-secondary { background: rgba(255,255,255,0.02); border: 1px dashed #2d2d4e; color: #94a3b8; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 12px; width: 100%; margin-bottom: 16px; transition: all 0.2s; }
+.btn-secondary:hover { border-color: #4b5563; color: #f1f5f9; }
+.btn-remove { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 20px; padding: 0 6px; }
+.output-box { background: #07070a; border: 1px dashed #22c55e; color: #22c55e; padding: 14px; font-family: monospace; font-size: 11px; border-radius: 8px; margin-top: 20px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; text-align: left; }
 
 .hidden { display: none !important; }
-.action-links { margin-top: 10px; display: flex; gap: 12px; justify-content: flex-end;}
-.act-btn { background:none; border:none; font-size:11px; cursor:pointer; text-transform:uppercase; font-weight:bold;}
 </style>
 </head>
 <body>
@@ -94,7 +92,7 @@ body {
 <div class="container">
     <div class="header-bar">
         <div class="header-left">
-            <span class="stamp">&#10059; Игровой сервер — Аналитика партий</span>
+            <span class="stamp">&#10059; СЕРВЕР СТАТИСТИКИ НАСТОЛЬНЫХ ИГР</span>
         </div>
         <a href="index.html" class="nav-link">➔ В досье</a>
     </div>
@@ -104,7 +102,7 @@ body {
             <button class="tab active" onclick="switchTab('total', this)">Общий винрейт</button>
             <button class="tab" onclick="switchTab('roles', this)">Статистика по ролям</button>
             <button class="tab" onclick="switchTab('archive', this)">Архив партий</button>
-            <button class="tab" style="margin-left: auto; color: #475569;" onclick="switchTab('admin', this)">⚙ Админ</button>
+            <button class="tab" style="margin-left: auto; color: #475569;" onclick="switchTab('admin', this)">⚙ Управление</button>
         </div>
 
         <div id="view-total">
@@ -112,10 +110,10 @@ body {
                 <thead>
                     <tr>
                         <th>Игрок</th>
-                        <th style="text-align: center;">Всего игр</th>
-                        <th style="text-align: center;">Победы</th>
-                        <th style="text-align: center;">Поражения</th>
-                        <th>Общий винрейт</th>
+                        <th style="text-align: center; width: 100px;">Всего игр</th>
+                        <th style="text-align: center; width: 100px;">Победы</th>
+                        <th style="text-align: center; width: 100px;">Поражения</th>
+                        <th>Винрейт (%)</th>
                     </tr>
                 </thead>
                 <tbody id="total-tbody"></tbody>
@@ -126,12 +124,12 @@ body {
             <table class="stats-table">
                 <thead>
                     <tr>
-                        <th>Игра</th>
+                        <th>Настольная игра</th>
                         <th>Игрок</th>
-                        <th>Роль</th>
-                        <th style="text-align: center;">Игр</th>
-                        <th style="text-align: center;">В / П</th>
-                        <th>Винрейт роли</th>
+                        <th>Сыгранная роль</th>
+                        <th style="text-align: center; width: 80px;">Игр</th>
+                        <th style="text-align: center; width: 100px;">В / П</th>
+                        <th>Винрейт на роли</th>
                     </tr>
                 </thead>
                 <tbody id="roles-tbody"></tbody>
@@ -144,35 +142,39 @@ body {
 
         <div id="view-admin" class="hidden">
             <div id="admin-auth" class="admin-lock-panel">
-                <div class="form-group" style="max-width: 300px; margin: 0 auto 14px;">
-                    <label class="form-label">Введите ключ доступа</label>
-                    <input type="password" id="admin-pass" class="form-input" placeholder="Пароль администратора">
+                <div class="form-group" style="max-width: 320px; margin: 0 auto 16px;">
+                    <label class="form-label">Введите персональный ключ доступа</label>
+                    <input type="password" id="admin-pass" class="form-input" placeholder="Ключ администратора">
                 </div>
-                <button class="btn-primary" onclick="checkAdminPassword()">Войти</button>
+                <button class="btn-primary" onclick="checkAdminPassword()">Авторизоваться</button>
             </div>
 
             <div id="admin-content" class="hidden">
-                <div style="font-size: 12px; color: #64748b; margin-bottom: 20px; border-left: 2px solid #22c55e; padding-left: 10px;">
-                    Вы вошли как администратор. Здесь вы можете регистрировать новые партии. После сохранения система выдаст строчку кода, которую нужно перенести в ваш репозиторий на GitHub.
+                <div style="font-size: 12px; color: #94a3b8; margin-bottom: 20px; border-left: 3px solid #7c3aed; padding-left: 12px; line-height: 1.5;">
+                    Режим добавления записей активен. Внесите данные сыгранной партии. Система сгенерирует актуальный массив кода, который вам потребуется вставить в ваш репозиторий на GitHub.
                 </div>
-                <form onsubmit="event.preventDefault(); registerMatch();">
-                    <div class="form-group"><label class="form-label">Дата партии</label><input type="date" id="f-date" class="form-input" required></div>
-                    <div class="form-group"><label class="form-label">Название игры</label><input type="text" id="f-game" class="form-input" placeholder="Например: Культ Хаоса" required></div>
-                    <div class="form-group"><label class="form-label">Кто победил (Фракция/Имя)</label><input type="text" id="f-winner" class="form-input" placeholder="Например: Культ или Азирет" required></div>
+                <form onsubmit="event.preventDefault(); generateNewDatabaseString();">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group"><label class="form-label">Дата сессии</label><input type="date" id="f-date" class="form-input" required></div>
+                        <div class="form-group"><label class="form-label">Название игры</label><input type="text" id="f-game" class="form-input" placeholder="Напр. Культ Хаоса" required></div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Победитель партий (Имя или Сторона)</label><input type="text" id="f-winner" class="form-input" placeholder="Кто выиграл (Напр. Азирет или Культисты)" required></div>
                     
-                    <div class="form-group" style="margin-top: 20px;">
-                        <label class="form-label" style="color: #a78bfa;">Игроки и роли в партии</label>
+                    <div class="form-group" style="margin-top: 24px;">
+                        <label class="form-label" style="color: #a78bfa; font-weight: bold;">Участники, роли и исходы</label>
                         <div id="admin-roles-wrapper"></div>
-                        <button type="button" class="btn-secondary" onclick="addAdminRoleRow()">+ Добавить игрока в партию</button>
+                        <button type="button" class="btn-secondary" onclick="addAdminRoleRow()">+ Добавить игрока в отчет</button>
                     </div>
 
-                    <div class="form-group"><label class="form-label">Заметки к партии</label><input type="text" id="f-notes" class="form-input" placeholder="Краткий комментарий"></div>
-                    <button type="submit" class="btn-primary">Сгенерировать партию</button>
+                    <div class="form-group"><label class="form-label">Лог-заметки / Комментарий</label><input type="text" id="f-notes" class="form-input" placeholder="Опишите как прошла игра"></div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Скомпилировать отчет партии</button>
                 </form>
 
-                <div id="output-section" class="hidden">
-                    <div style="font-size: 12px; margin-top:20px; color: #22c55e; font-weight: bold;">✓ Партия успешно сгенерирована! Шаг для обновления GitHub:</div>
-                    <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">Скопируйте строчку ниже, откройте ваш файл <code style="color:#fff">stats.html</code> на GitHub, замените строку <code style="color:#fff">const GLOBAL_GAMES = [...];</code> (строка №161) на скопированную и сохраните (Commit). После этого все увидят обновления!</div>
+                <div id="output-section" class="hidden" style="text-align: center;">
+                    <div style="font-size: 13px; margin-top:24px; color: #22c55e; font-weight: bold;">✓ Код партии успешно сгенерирован!</div>
+                    <div style="font-size: 12px; color: #94a3b8; margin-top: 6px; text-align: left; line-height: 1.4;">
+                        Скопируйте зелёную строку ниже. Откройте файл <code style="color:#fff">stats.html</code> в репозитории GitHub, замените строку <code style="color:#fff">const GLOBAL_GAMES = [...];</code> (строка №135) на скопированную строку и примените изменения (**Commit**).
+                    </div>
                     <div class="output-box" id="code-output"></div>
                 </div>
             </div>
@@ -183,7 +185,7 @@ body {
 
 <script>
 // =========================================================================
-// КЛЮЧЕВАЯ СТРОКА: ВАША БАЗА ДАННЫХ ПАРТИЙ (Именно её вы будете обновлять через GitHub)
+// ГЛОБАЛЬНАЯ БАЗА ДАННЫХ ИГР (Обновляйте эту строку при добавлении новых партий)
 // =========================================================================
 const GLOBAL_GAMES = [{"id":1716940000000,"date":"2026-05-28","game":"Культ Хаоса","winner":"Танай","notes":"Дияр ушел в деструктивный коэффициент, подставив всех.","roles":[{"player":"Азирет","role":"Вексель","won":false},{"player":"Дияр","role":"Деструктор","won":false},{"player":"Танай","role":"Утёнок","won":true}]},{"id":1716850000000,"date":"2026-05-27","game":"Культ Хаоса","winner":"Азирет","notes":"Азирет блестяще разыграл карту Интриги на финальном ходу.","roles":[{"player":"Азирет","role":"Лидер Культа","won":true},{"player":"Дияр","role":"Аналитик","won":false},{"player":"Танай","role":"Aide-de-camp","won":false}]}];
 // =========================================================================
@@ -191,9 +193,9 @@ const GLOBAL_GAMES = [{"id":1716940000000,"date":"2026-05-28","game":"Культ
 const KNOWN_PLAYERS = ["Азирет", "Дияр", "Танай"];
 document.getElementById('f-date').valueAsDate = new Date();
 
-function switchTab(tabId, btn) {
+function switchTab(tabId, btnElement) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
+    btnElement.classList.add('active');
     
     document.getElementById('view-total').classList.toggle('hidden', tabId !== 'total');
     document.getElementById('view-roles').classList.toggle('hidden', tabId !== 'roles');
@@ -201,45 +203,44 @@ function switchTab(tabId, btn) {
     document.getElementById('view-admin').classList.toggle('hidden', tabId !== 'admin');
 }
 
-// 1. РЕНДЕР: ОБЩИЙ ВИНРЕЙТ
+// 1. ПОСТРОЕНИЕ ТАБЛИЦЫ: ОБЩИЙ ВИНРЕЙТ
 function renderTotalWinrate() {
     const tbody = document.getElementById("total-tbody");
     tbody.innerHTML = "";
     
-    const playerStats = {};
-    KNOWN_PLAYERS.forEach(p => playerStats[p] = { total: 0, wins: 0, losses: 0 });
+    const stats = {};
+    KNOWN_PLAYERS.forEach(p => stats[p] = { total: 0, wins: 0, losses: 0 });
 
     GLOBAL_GAMES.forEach(g => {
         g.roles.forEach(r => {
-            if (playerStats[r.player]) {
-                playerStats[r.player].total++;
-                if (r.won) playerStats[r.player].wins++;
-                else playerStats[r.player].losses++;
+            if (stats[r.player]) {
+                stats[r.player].total++;
+                if (r.won) stats[r.player].wins++; else stats[r.player].losses++;
             }
         });
     });
 
     KNOWN_PLAYERS.forEach(p => {
-        const s = playerStats[p];
+        const s = stats[p];
         const rate = s.total > 0 ? Math.round((s.wins / s.total) * 100) : 0;
-        const barColor = rate >= 50 ? '#16a34a' : '#ef4444';
+        const color = rate >= 50 ? '#16a34a' : '#ef4444';
         
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td style="font-weight: 600; color: #f8fafc; font-size: 14px;">${p}</td>
-            <td style="text-align: center; font-weight: bold;">${s.total}</td>
-            <td style="text-align: center; color: #86efac; font-family: monospace;">${s.wins}</td>
+            <td style="text-align: center; font-weight: bold; color: #cbd5e1;">${s.total}</td>
+            <td style="text-align: center; color: #86efac; font-family: monospace; font-weight: bold;">${s.wins}</td>
             <td style="text-align: center; color: #f87171; font-family: monospace;">${s.losses}</td>
             <td>
-                <div class="rate-bar-bg"><div class="rate-bar-fill" style="width: ${rate}%; background: ${barColor}"></div></div>
-                <span style="font-family: monospace; font-weight: bold; color: ${barColor}">${rate}%</span>
+                <div class="rate-bar-bg"><div class="rate-bar-fill" style="width: ${rate}%; background: ${color}"></div></div>
+                <span style="font-family: monospace; font-weight: bold; color: ${color}">${rate}%</span>
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-// 2. РЕНДЕР: СТАТИСТИКА ПО РОЛЯМ
+// 2. ПОСТРОЕНИЕ ТАБЛИЦЫ: СТАТИСТИКА ПО РОЛЯМ
 function renderRoleStats() {
     const tbody = document.getElementById("roles-tbody");
     tbody.innerHTML = "";
@@ -258,27 +259,33 @@ function renderRoleStats() {
         const [game, player, role] = key.split("|||");
         const s = map[key];
         const rate = Math.round((s.wins / s.count) * 100);
+        const color = rate >= 50 ? '#16a34a' : '#ef4444';
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td><span class="badge-game">${game}</span></td>
-            <td style="font-weight: 600;">${player}</td>
-            <td style="font-family: monospace; color: #a78bfa;">${role}</td>
+            <td style="font-weight: 600; color: #f8fafc;">${player}</td>
+            <td style="font-family: monospace; color: #a78bfa; font-weight: 500;">${role}</td>
             <td style="text-align: center; font-weight: bold;">${s.count}</td>
-            <td style="text-align: center; font-family: monospace;"><span style="color:#86efac;">${s.wins}</span> / <span style="color:#f87171;">${s.losses}</span></td>
+            <td style="text-align: center; font-family: monospace;"><span style="color:#86efac; font-weight:bold;">${s.wins}</span> / <span style="color:#f87171;">${s.losses}</span></td>
             <td>
-                <div class="rate-bar-bg"><div class="rate-bar-fill" style="width: ${rate}%; background: ${rate >= 50 ? '#16a34a' : '#ef4444'}"></div></div>
-                <span style="font-family: monospace; font-weight: bold;">${rate}%</span>
+                <div class="rate-bar-bg"><div class="rate-bar-fill" style="width: ${rate}%; background: ${color}"></div></div>
+                <span style="font-family: monospace; font-weight: bold; color: ${color}">${rate}%</span>
             </td>
         `;
         tbody.appendChild(tr);
     }
 }
 
-// 3. РЕНДЕР: АРХИВ ПАРТИЙ
+// 3. ПОСТРОЕНИЕ: АРХИВ ПАРТИЙ (ЛОГ ПО ДНЯМ)
 function renderArchive() {
     const wrapper = document.getElementById("archive-wrapper");
     wrapper.innerHTML = "";
+
+    if(GLOBAL_GAMES.length === 0){
+        wrapper.innerHTML = `<div style="text-align:center; color:#64748b; padding:40px; font-size:13px;">Архив пуст. Зарегистрируйте первую игру в панели управления.</div>`;
+        return;
+    }
 
     GLOBAL_GAMES.forEach(g => {
         const d = new Date(g.date);
@@ -288,8 +295,8 @@ function renderArchive() {
 
         const rolesHtml = g.roles.map(r => `
             <div class="log-player-pill">
-                <span><strong>${r.player}</strong> <span style="color:#64748b; font-size:11px; font-family:monospace;">(${r.role})</span></span>
-                <span style="color: ${r.won ? '#86efac' : '#f87171'}; font-weight: bold;">${r.won ? '✓' : '✗'}</span>
+                <span><strong style="color:#f8fafc;">${r.player}</strong> <span style="color:#64748b; font-size:11px; font-family:monospace;">— ${r.role}</span></span>
+                <span style="color: ${r.won ? '#86efac' : '#f87171'}; font-weight: bold; font-size:14px;">${r.won ? '✓ Победа' : '✗ Пораж.'}</span>
             </div>
         `).join("");
 
@@ -305,17 +312,17 @@ function renderArchive() {
     });
 }
 
-// АДМИН-ЛОГИКА
+// АДМИНИСТРАТИВНЫЙ ИНТЕРФЕЙС
 function checkAdminPassword() {
     const pass = document.getElementById("admin-pass").value;
-    if (pass === "1234") { // Сюда можно поставить любой ваш пароль
+    if (pass === "1234") { // Вы можете заменить 1234 на любой ваш секретный пароль
         document.getElementById("admin-auth").classList.add("hidden");
         document.getElementById("admin-content").classList.remove("hidden");
         if(document.getElementById("admin-roles-wrapper").children.length === 0) {
             KNOWN_PLAYERS.forEach(p => addAdminRoleRow(p));
         }
     } else {
-        alert("Неверный ключ доступа!");
+        alert("Ошибка доступа: Неверный административный ключ.");
     }
 }
 
@@ -324,19 +331,19 @@ function addAdminRoleRow(playerPreset = "") {
     const div = document.createElement("div");
     div.className = "role-entry";
     
-    let options = KNOWN_PLAYERS.map(p => `<option value="${p}" ${playerPreset===p?'selected':''}>${p}</option>`).join("");
-    options += `<option value="Гость">Гость</option>`;
+    let options = KNOWN_PLAYERS.map(p => `<option value="${p}" ${playerPreset === p ? 'selected' : ''}>${p}</option>`).join("");
+    options += `<option value="Гость">[Гость]</option>`;
 
     div.innerHTML = `
         <select class="form-select r-player" style="flex: 1;">${options}</select>
-        <input type="text" class="form-input r-name" placeholder="Роль (напр. Утёнок)" style="flex: 1.5;" required>
-        <select class="form-select r-won" style="width: 100px;"><option value="true">Победа</option><option value="false">Пораж.</option></select>
+        <input type="text" class="form-input r-name" placeholder="Роль в игре (напр. Волк)" style="flex: 1.6;" required>
+        <select class="form-select r-won" style="width: 110px;"><option value="true">Победа</option><option value="false">Поражение</option></select>
         <button type="button" class="btn-remove" onclick="this.parentElement.remove()">&times;</button>
     `;
     wrap.appendChild(div);
 }
 
-function registerMatch() {
+function generateNewDatabaseString() {
     const date = document.getElementById("f-date").value;
     const game = document.getElementById("f-game").value.trim();
     const winner = document.getElementById("f-winner").value.trim();
@@ -353,18 +360,19 @@ function registerMatch() {
     });
 
     const newMatch = { id: Date.now(), date, game, winner, notes, roles: rolesData };
-    
-    // Создаем копию текущей базы данных и пушим вверх списка новый матч
     const updatedGames = [newMatch, ...GLOBAL_GAMES];
     
-    // Генерируем красивую строчку для замены в коде
+    // Формируем чистую строку кода для вставки
     const codeString = `const GLOBAL_GAMES = ${JSON.stringify(updatedGames)};`;
     
     document.getElementById("code-output").textContent = codeString;
     document.getElementById("output-section").classList.remove("hidden");
+    
+    // Мягкая прокрутка вниз к результату генерации
+    document.getElementById("output-section").scrollIntoView({ behavior: 'smooth' });
 }
 
-// Запуск приложения
+// Первоначальный запуск системы рендеринга
 renderTotalWinrate();
 renderRoleStats();
 renderArchive();
