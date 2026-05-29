@@ -217,6 +217,11 @@ a { color: #a78bfa; text-decoration: none; }
                 <select id="filter-player" class="form-select" onchange="renderArchive()">
                     <option value="">Все игроки</option>
                 </select>
+                <select id="filter-mode" class="form-select" onchange="renderArchive()">
+                    <option value="">Все форматы</option>
+                    <option value="offline">Оффлайн</option>
+                    <option value="online">Онлайн</option>
+                </select>
             </div>
             <button class="nav-btn primary admin-only" onclick="openSessionModal()">+ Добавить</button>
             <button class="nav-btn admin-only" onclick="openSettingsModal()" title="Игры и игроки">⚙</button>
@@ -325,7 +330,7 @@ const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';  // anon public
 
 // ⚠️ Укажите ТОТ ЖЕ email, что в supabase-auth-setup.sql и в Supabase → Authentication → Users
-const ADMIN_EMAIL = 'medet.ns@gmail.com';
+const ADMIN_EMAIL = 'YOUR_EMAIL@example.com';
 
 let supabaseClient = null;
 let authSession = null;
@@ -678,10 +683,7 @@ function renderWinrate() {
     STATE.players.forEach(name => {
         const c = counts[name];
         const pct = c.t ? Math.round((c.w / c.t) * 100) : 0;
-        let color;
-        if (pct >= 65) color = '#4ade80';       // ярко-зелёный
-        else if (pct >= 45) color = '#facc15';  // жёлто-оранжевый
-        else color = '#fb7185';                 // красный
+        const color = winratePctColor(pct);
 
         const card = document.createElement('div');
         card.className = 'win-card';
@@ -728,11 +730,26 @@ function cellStats(map, player, role) {
     return { w: s.w, l, pct: `${pct}%`, raw: pct };
 }
 
-function pctColor(raw) {
+/** Общий винрейт: ≤25 тёмно-красный … 75+ бирюзовый */
+function winratePctColor(pct) {
+    if (pct <= 25) return '#991b1b';
+    if (pct <= 36) return '#fb7185';
+    if (pct <= 49) return '#facc15';
+    if (pct <= 60) return '#4ade80';
+    if (pct <= 74) return '#16a34a';
+    return '#22d3ee';
+}
+
+/** Статистика по ролям: 100 бирюзовый … 0–9 чёрно-красный */
+function rolePctColor(raw) {
     if (raw === null || raw === undefined) return '#64748b';
-    if (raw >= 65) return '#4ade80';      // высокий — зелёный
-    if (raw >= 45) return '#facc15';      // средний — жёлтый/оранжевый
-    return '#fb7185';                     // низкий — красный
+    if (raw >= 100) return '#22d3ee';
+    if (raw >= 80) return '#16a34a';
+    if (raw >= 65) return '#4ade80';
+    if (raw >= 50) return '#facc15';
+    if (raw >= 30) return '#fb7185';
+    if (raw >= 10) return '#991b1b';
+    return '#450a0a';
 }
 
 function renderRoleMatrix() {
@@ -786,7 +803,7 @@ function renderRoleMatrix() {
             } else {
                 const l = s.t - s.w;
                 const raw = Math.round((s.w / s.t) * 100);
-                const clr = pctColor(raw);
+                const clr = rolePctColor(raw);
                 tr.innerHTML = `
                     <td class="player-name">${player}</td>
                     <td class="group" style="color:#4ade80;">${s.w}</td>
@@ -835,7 +852,7 @@ function renderRoleMatrix() {
             const st = cellStats(map, player, role);
             if (st.raw !== null) { totalT += map[`${player}|||${role}`].t; totalW += map[`${player}|||${role}`].w; }
             const dash = v => v === '—' ? '<span class="dash">—</span>' : v;
-            const pctClr = pctColor(st.raw);
+            const pctClr = rolePctColor(st.raw);
             cells += `
                 <td class="group" style="color:#4ade80;">${dash(st.w)}</td>
                 <td class="group" style="color:#fb7185;">${dash(st.l)}</td>
@@ -846,7 +863,7 @@ function renderRoleMatrix() {
         const totL = totalT - totalW;
         const totRaw = totalT ? Math.round((totalW / totalT) * 100) : null;
         const totPct = totalT ? `${totRaw}%` : '—';
-        const totClr = pctColor(totRaw);
+        const totClr = rolePctColor(totRaw);
         cells += `<td class="group" style="color:#4ade80;">${totalT ? totalW : '<span class="dash">—</span>'}</td>`;
         cells += `<td class="group" style="color:#fb7185;">${totalT ? totL : '<span class="dash">—</span>'}</td>`;
         cells += `<td class="group pct-cell" style="color:${totClr};">${totalT ? totPct : '<span class="dash">—</span>'}</td>`;
@@ -861,15 +878,22 @@ function renderRoleMatrix() {
 function populateFilters() {
     const fg = document.getElementById('filter-game');
     const fp = document.getElementById('filter-player');
-    const gVal = fg.value, pVal = fp.value;
+    const fm = document.getElementById('filter-mode');
+    const gVal = fg.value, pVal = fp.value, mVal = fm?.value || '';
 
     fg.innerHTML = '<option value="">Все игры</option>' +
         STATE.games.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
     fp.innerHTML = '<option value="">Все игроки</option>' +
         STATE.players.map(p => `<option value="${p}">${p}</option>`).join('');
 
-    fg.value = gVal; fp.value = pVal;
+    fg.value = gVal;
+    fp.value = pVal;
+    if (fm) fm.value = mVal;
     syncGameSelect();
+}
+
+function sessionMode(s) {
+    return s.mode === 'online' ? 'online' : 'offline';
 }
 
 function syncGameSelect() {
@@ -881,15 +905,20 @@ function renderArchive() {
     const root = document.getElementById('archive-output');
     const fGame = document.getElementById('filter-game').value;
     const fPlayer = document.getElementById('filter-player').value;
+    const fMode = document.getElementById('filter-mode')?.value || '';
 
     let list = [...STATE.sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
     if (fGame) list = list.filter(s => s.game === fGame);
     if (fPlayer) list = list.filter(s => (s.roles || []).some(r => r.player === fPlayer));
+    if (fMode) list = list.filter(s => sessionMode(s) === fMode);
 
     if (!list.length) {
-        root.innerHTML = isAdmin()
-            ? '<div class="empty-hint">Пока нет партий. Нажмите «+ Добавить».</div>'
-            : '<div class="empty-hint">Пока нет партий в архиве.</div>';
+        const filtered = fGame || fPlayer || fMode;
+        root.innerHTML = filtered
+            ? '<div class="empty-hint">Нет партий по выбранным фильтрам.</div>'
+            : (isAdmin()
+                ? '<div class="empty-hint">Пока нет партий. Нажмите «+ Добавить».</div>'
+                : '<div class="empty-hint">Пока нет партий в архиве.</div>');
         return;
     }
 
