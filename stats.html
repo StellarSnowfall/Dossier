@@ -72,6 +72,11 @@ a { color: #a78bfa; text-decoration: none; }
 }
 .pill:hover { color: #e2e8f0; border-color: #64748b; }
 .pill.active { background: #5b21b6; border-color: #7c3aed; color: #fff; }
+.pill.sm { padding: 7px 12px; font-size: 13px; border-radius: 999px; }
+.pill.toggle { background: #0b0b15; }
+.pill.toggle.active { background: rgba(124,58,237,0.22); border-color: #7c3aed; color: #e9d5ff; }
+.pill.toggle.active::before { content: '✓'; margin-right: 8px; color: #c4b5fd; font-weight: 900; }
+.pills-row.tight { gap: 10px; margin: 6px 0 16px; }
 
 /* ── Role matrix table ── */
 .table-wrap { overflow-x: auto; border: 1px solid #2d2d4e; border-radius: 10px; background: #0a0a14; }
@@ -231,13 +236,13 @@ a { color: #a78bfa; text-decoration: none; }
                 <select id="f-game" class="form-select" style="width:100%" onchange="syncRoleDropdowns()" required></select>
             </div>
             <div class="field">
-                <label class="stamp">Итог (кто победил)</label>
-                <input type="text" id="f-winner" class="form-input" placeholder="Либералы, пираты…" required>
+                <label class="stamp">Участники</label>
+                <div id="participants-pills" class="pills-row tight"></div>
             </div>
             <div class="field" style="background:#0a0a14;padding:12px;border-radius:8px;border:1px solid #2d2d4e;">
                 <label class="stamp" style="color:#a78bfa;margin-bottom:8px;">Игроки и роли</label>
                 <div id="form-players-root"></div>
-                <button type="button" class="nav-btn" style="width:100%;margin-top:6px;font-size:12px;" onclick="buildPlayerRow()">+ Участник</button>
+                <button type="button" class="nav-btn" style="width:100%;margin-top:6px;font-size:12px;" onclick="addEmptyRoleRow()">+ Добавить роль</button>
             </div>
             <div class="field">
                 <label class="stamp">Заметки</label>
@@ -754,7 +759,6 @@ function renderArchive() {
                     <div>
                         <div class="log-game">${s.game}</div>
                         <div class="log-meta">Участники: <b>${participants || '—'}</b></div>
-                        <div class="log-meta">Итог: <b>${s.winner || '—'}</b></div>
                     </div>
                     <div class="log-actions">
                         <button class="icon-btn" title="Изменить" onclick="editSession(${s.id})">✎</button>
@@ -774,10 +778,9 @@ function openSessionModal() {
     editingSessionId = null;
     document.getElementById('session-modal-title').textContent = 'Добавить партию';
     document.getElementById('f-date').valueAsDate = new Date();
-    document.getElementById('f-winner').value = '';
     document.getElementById('f-notes').value = '';
     document.getElementById('form-players-root').innerHTML = '';
-    STATE.players.forEach(p => buildPlayerRow(p));
+    renderParticipantsPills([]);
     syncGameSelect();
     syncRoleDropdowns();
     document.getElementById('session-modal').classList.remove('hidden');
@@ -795,15 +798,16 @@ function editSession(id) {
     document.getElementById('session-modal-title').textContent = 'Изменить партию';
     document.getElementById('f-date').value = s.date;
     document.getElementById('f-game').value = s.game;
-    document.getElementById('f-winner').value = s.winner || '';
     document.getElementById('f-notes').value = s.notes || '';
     document.getElementById('form-players-root').innerHTML = '';
-    (s.roles || []).forEach(r => buildPlayerRow(r.player, r.role, r.won));
+    const selected = Array.from(new Set((s.roles || []).map(r => r.player)));
+    renderParticipantsPills(selected);
+    (s.roles || []).forEach(r => addRoleRow(r.player, r.role, r.won));
     syncRoleDropdowns();
     document.getElementById('session-modal').classList.remove('hidden');
 }
 
-function buildPlayerRow(presetPlayer = '', presetRole = '', presetWon = true) {
+function addRoleRow(presetPlayer = '', presetRole = '', presetWon = true) {
     const root = document.getElementById('form-players-root');
     const div = document.createElement('div');
     div.className = 'player-row';
@@ -836,29 +840,88 @@ function syncRoleDropdowns() {
     document.querySelectorAll('.player-row').forEach(row => {
         const sel = row.querySelector('.src-r');
         const prev = sel.value;
-        sel.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
-        if (roles.includes(prev)) sel.value = prev;
+        if (!roles.length) {
+            sel.innerHTML = '<option value="">—</option>';
+            sel.value = '';
+            sel.disabled = true;
+        } else {
+            sel.disabled = false;
+            sel.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+            if (roles.includes(prev)) sel.value = prev;
+        }
+    });
+}
+
+function addEmptyRoleRow() {
+    addRoleRow('', '', true);
+}
+
+function getSelectedParticipants() {
+    return Array.from(document.querySelectorAll('#participants-pills .pill.toggle.active'))
+        .map(b => b.getAttribute('data-player'))
+        .filter(Boolean);
+}
+
+function renderParticipantsPills(selectedPlayers) {
+    const root = document.getElementById('participants-pills');
+    if (!root) return;
+    const set = new Set(selectedPlayers || []);
+    root.innerHTML = '';
+    STATE.players.forEach(p => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill sm toggle' + (set.has(p) ? ' active' : '');
+        btn.textContent = p;
+        btn.setAttribute('data-player', p);
+        btn.onclick = () => {
+            btn.classList.toggle('active');
+            syncRolesWithParticipants();
+        };
+        root.appendChild(btn);
+    });
+    syncRolesWithParticipants();
+}
+
+function syncRolesWithParticipants() {
+    const selected = new Set(getSelectedParticipants());
+    const root = document.getElementById('form-players-root');
+    if (!root) return;
+
+    // remove rows whose player is no longer selected
+    Array.from(root.querySelectorAll('.player-row')).forEach(row => {
+        const p = row.querySelector('.src-p')?.value;
+        if (p && STATE.players.includes(p) && !selected.has(p)) row.remove();
+    });
+
+    // add missing rows for selected players
+    const existing = new Set(
+        Array.from(root.querySelectorAll('.player-row .src-p'))
+            .map(sel => sel.value)
+            .filter(Boolean)
+    );
+    selected.forEach(p => {
+        if (!existing.has(p)) addRoleRow(p, '', true);
     });
 }
 
 async function saveSession() {
     const date = document.getElementById('f-date').value;
     const game = document.getElementById('f-game').value;
-    const winner = document.getElementById('f-winner').value.trim();
     const notes = document.getElementById('f-notes').value.trim();
     const rows = document.querySelectorAll('.player-row');
     if (!rows.length) return alert('Добавьте хотя бы одного игрока.');
 
     const roles = [];
     rows.forEach(r => {
+        const roleValue = r.querySelector('.src-r').disabled ? '' : r.querySelector('.src-r').value;
         roles.push({
             player: r.querySelector('.src-p').value,
-            role: r.querySelector('.src-r').value,
+            role: roleValue,
             won: r.querySelector('.src-w').value === 'true'
         });
     });
 
-    const session = { id: editingSessionId || Date.now(), date, game, winner, notes, roles };
+    const session = { id: editingSessionId || Date.now(), date, game, notes, roles };
 
     if (editingSessionId) {
         const i = STATE.sessions.findIndex(s => s.id === editingSessionId);
