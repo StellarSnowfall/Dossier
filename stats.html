@@ -5,108 +5,151 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Статистика — Игровой архив</title>
 <style>
-/* --- ВАШИ ОРИГИНАЛЬНЫЕ БАЗОВЫЕ СТИЛИ --- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #0f0f1a;
     color: #e2e8f0;
     min-height: 100vh;
-    padding: 24px 16px;
+    padding: 20px 16px 40px;
 }
 a { color: #a78bfa; text-decoration: none; }
 
-/* Шапка из вашего шаблона */
+/* ── Header ── */
 .header-bar {
-    max-width: 1100px;
-    margin: 0 auto 20px;
-    background: #0a0a14;
-    border: 1px solid #2d2d4e;
-    border-radius: 12px;
-    padding: 10px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    max-width: 1100px; margin: 0 auto 20px;
+    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 12px;
+    padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
 }
 .header-left { display: flex; align-items: center; gap: 12px; }
 .logo-img { height: 34px; width: 34px; object-fit: cover; border-radius: 50%; border: 1px solid #2d2d4e; }
 .stamp { font-size: 11px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; }
+.header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sync-pill {
+    font-size: 11px; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid #2d2d4e; color: #64748b; display: flex; align-items: center; gap: 6px;
+}
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #64748b; }
+.sync-pill.ok { color: #86efac; border-color: #166534; }
+.sync-pill.ok .sync-dot { background: #22c55e; }
+.sync-pill.err { color: #fca5a5; border-color: #7f1d1d; }
+.sync-pill.err .sync-dot { background: #ef4444; }
 .nav-btn {
-    background: #13131f;
-    border: 1px solid #2d2d4e;
-    color: #e2e8f0;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
+    background: #13131f; border: 1px solid #2d2d4e; color: #e2e8f0;
+    padding: 6px 14px; border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.2s;
 }
 .nav-btn:hover { background: #1e1e2f; border-color: #a78bfa; }
+.nav-btn.primary { background: #5b21b6; border-color: #7c3aed; color: #fff; }
+.nav-btn.primary:hover { background: #6d28d9; }
 
-/* Контентная область */
 .main-container { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
-.main-card { background: #13131f; border: 1px solid #2d2d4e; border-radius: 14px; padding: 24px; }
-
-/* Табы */
-.tabs-nav { display: flex; gap: 8px; border-bottom: 1px solid #2d2d4e; margin-bottom: 24px; padding-bottom: 1px; }
-.tab-btn {
-    font-size: 13px; padding: 10px 16px; cursor: pointer; color: #64748b; background: none;
-    border: none; border-bottom: 2px solid transparent; font-family: inherit; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.2s;
+.section-card { background: #13131f; border: 1px solid #2d2d4e; border-radius: 14px; padding: 22px 24px; }
+.section-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 18px; gap: 12px; flex-wrap: wrap;
 }
-.tab-btn:hover { color: #cbd5e1; }
-.tab-btn.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+.section-title { font-size: 12px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #94a3b8; }
+.section-meta { font-size: 12px; color: #64748b; }
 
-/* ЛИДЕРБОРД */
-.leaderboard-list { display: flex; flex-direction: column; gap: 12px; }
-.leaderboard-item {
-    display: flex; align-items: center; justify-content: space-between;
-    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px; padding: 14px 20px;
+/* ── Winrate cards ── */
+.winrate-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.win-card {
+    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px;
+    padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 4px;
 }
-.lb-rank { font-size: 18px; font-weight: 800; color: #475569; width: 40px; font-style: italic; }
-.lb-name { font-size: 15px; font-weight: bold; color: #f8fafc; flex: 1; }
-.lb-details { display: flex; align-items: center; gap: 20px; justify-content: flex-end; flex: 2; }
-.lb-games { font-size: 12px; color: #64748b; font-family: monospace; }
-.lb-wl { font-family: monospace; font-size: 13px; color: #94a3b8; }
-.lb-wl .w { color: #10b981; font-weight: bold; }
-.lb-wl .l { color: #f43f5e; font-weight: bold; }
-.lb-progress-wrapper { width: 130px; }
-.lb-pct { font-family: monospace; font-size: 15px; font-weight: bold; width: 50px; text-align: right; }
+.win-card .name { font-size: 15px; font-weight: 700; color: #f8fafc; }
+.win-card .pct { font-size: 32px; font-weight: 800; line-height: 1.1; color: #4ade80; }
+.win-card .sub { font-size: 12px; color: #64748b; font-family: monospace; margin-bottom: 10px; }
+.win-card .bar { height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+.win-card .bar-fill { height: 100%; background: #4ade80; border-radius: 2px; transition: width 0.4s ease; }
 
-.rank-1 .lb-rank { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.2); }
-.rank-2 .lb-rank { color: #cbd5e1; }
-.rank-3 .lb-rank { color: #ba855a; }
+/* ── Game pills ── */
+.pills-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pill {
+    font-size: 12px; padding: 8px 14px; border-radius: 20px; cursor: pointer;
+    border: 1px solid #2d2d4e; background: #0a0a14; color: #94a3b8;
+    font-family: inherit; transition: all 0.15s;
+}
+.pill:hover { color: #e2e8f0; border-color: #64748b; }
+.pill.active { background: #5b21b6; border-color: #7c3aed; color: #fff; }
 
-.p-bar-bg { width: 100%; height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
-.p-bar-fill { height: 100%; transition: width 0.5s ease; }
+/* ── Role matrix table ── */
+.table-wrap { overflow-x: auto; border: 1px solid #2d2d4e; border-radius: 10px; background: #0a0a14; }
+.role-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+.role-table th {
+    color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 10px 8px; border-bottom: 1px solid #2d2d4e; font-weight: 600; text-align: center;
+}
+.role-table th.player-col { text-align: left; padding-left: 16px; }
+.role-table th.group { border-left: 1px solid #1e293b; }
+.role-table td {
+    padding: 11px 8px; border-bottom: 1px solid #13131f; text-align: center;
+    color: #cbd5e1; font-variant-numeric: tabular-nums;
+}
+.role-table td.player-name { text-align: left; padding-left: 16px; font-weight: 600; color: #f8fafc; }
+.role-table td.group { border-left: 1px solid #1a1a2e; }
+.role-table td.pct-cell { font-weight: 700; color: #f8fafc; }
+.role-table tr:last-child td { border-bottom: none; }
+.role-table .dash { color: #475569; }
 
-/* ТАБЛИЦЫ РОЛЕЙ */
-.game-box { margin-bottom: 24px; background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px; overflow: hidden; }
-.game-box-title { background: #1a1a2e; padding: 12px 16px; font-size: 13px; font-weight: bold; color: #a78bfa; border-bottom: 1px solid #2d2d4e; text-transform: uppercase; letter-spacing: 1px; }
-.table-spec { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-.table-spec th { color: #64748b; font-size: 11px; text-transform: uppercase; padding: 12px 16px; border-bottom: 1px solid #2d2d4e; }
-.table-spec td { padding: 12px 16px; border-bottom: 1px solid #13131f; color: #cbd5e1; }
-.table-spec tr:last-child td { border-bottom: none; }
+/* ── Archive ── */
+.archive-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+.archive-toolbar .filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
+.form-select, .form-input {
+    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 8px;
+    padding: 8px 12px; color: #f8fafc; font-size: 13px; font-family: inherit;
+}
+.form-select:focus, .form-input:focus { border-color: #a78bfa; outline: none; }
+.date-label {
+    font-size: 11px; color: #64748b; letter-spacing: 1px; text-transform: uppercase;
+    margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #2d2d4e;
+}
+.log-card {
+    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px;
+    padding: 14px 16px; margin-bottom: 10px;
+}
+.log-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.log-game { color: #a78bfa; font-weight: 700; font-size: 14px; }
+.log-meta { font-size: 12px; color: #64748b; margin-top: 4px; }
+.log-meta b { color: #94a3b8; font-weight: 600; }
+.log-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.icon-btn {
+    background: #13131f; border: 1px solid #2d2d4e; color: #94a3b8;
+    width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 14px;
+}
+.icon-btn:hover { border-color: #a78bfa; color: #e2e8f0; }
+.icon-btn.danger:hover { border-color: #f43f5e; color: #f43f5e; }
+.log-roles { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; }
+.log-role-line { color: #cbd5e1; }
+.log-role-line .won { color: #4ade80; }
+.log-role-line .lost { color: #94a3b8; }
+.log-notes { font-size: 12px; color: #64748b; font-style: italic; margin-top: 8px; }
 
-/* АРХИВ */
-.log-card { background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px; padding: 16px; margin-bottom: 12px; border-left: 4px solid #a78bfa; }
-.log-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #2d2d4e; padding-bottom: 8px; margin-bottom: 12px; }
-.log-tag { background: #1e1e38; color: #a78bfa; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
-.log-date { font-size: 11px; color: #64748b; font-family: monospace; }
-.log-winner { font-size: 12px; color: #a7f3d0; background: rgba(4,120,87,0.15); padding: 3px 10px; border-radius: 12px; }
-.log-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
-.log-pill { background: #13131f; padding: 8px 12px; border-radius: 6px; font-size: 12px; display: flex; justify-content: space-between; border: 1px solid #2d2d4e; }
-.log-notes { font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 10px; padding-left: 8px; border-left: 2px solid #4b5563; }
-
-/* АДМИНКА */
-.form-input, .form-select { width: 100%; background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 6px; padding: 10px; color: #f8fafc; font-size: 13px; font-family: inherit; }
-.form-input:focus, .form-select:focus { border-color: #a78bfa; outline: none; }
+/* ── Modal ── */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; padding: 16px;
+}
+.modal {
+    background: #13131f; border: 1px solid #2d2d4e; border-radius: 14px;
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 24px;
+}
+.modal h3 { font-size: 16px; margin-bottom: 16px; color: #f8fafc; }
+.modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.btn-action {
+    background: #7c3aed; color: #fff; border: none; padding: 11px 16px;
+    border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; flex: 1;
+}
+.btn-action:hover { background: #6d28d9; }
+.btn-action.secondary { background: #1e293b; color: #e2e8f0; }
 .player-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-.btn-action { background: #a78bfa; color: #0f0f1a; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; text-transform: uppercase; width: 100%; }
-.btn-action:hover { background: #c084fc; }
-
-.status-bar { text-align: center; padding: 20px; color: #64748b; font-size: 13px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; margin-bottom: 4px; }
+.status-bar { text-align: center; padding: 40px 20px; color: #64748b; font-size: 13px; }
 .hidden { display: none !important; }
+.empty-hint { text-align: center; color: #475569; padding: 24px; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -115,415 +158,600 @@ a { color: #a78bfa; text-decoration: none; }
     <div class="header-left">
         <img src="Логотип.jpg" class="logo-img" alt="Logo">
         <div style="display:flex; flex-direction:column;">
-            <span style="font-weight:700; font-size:14px; letter-spacing:0.5px;">ИГРОВОЙ АРХИВ</span>
+            <span style="font-weight:700; font-size:14px; letter-spacing:0.5px;">О ИГРОВОМ АРХИВЕ</span>
             <span class="stamp">Статистика и логи</span>
         </div>
     </div>
     <div class="header-right">
-        <a href="index.html" class="nav-btn">➔ В досье</a>
+        <span id="sync-status" class="sync-pill"><span class="sync-dot"></span><span id="sync-text">Загрузка…</span></span>
+        <a href="index.html" class="nav-btn">← Досье</a>
     </div>
 </div>
 
-<div class="main-container">
-    <div class="main-card">
-        <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('total', this)">Общий винрейт</button>
-            <button class="tab-btn" onclick="switchTab('roles', this)">Статистика по ролям</button>
-            <button class="tab-btn" onclick="switchTab('archive', this)">Архив партий</button>
-            <button class="tab-btn" style="margin-left: auto; color: #475569;" onclick="switchTab('admin', this)">⚙ Добавить</button>
+<div id="page-loader" class="status-bar">Получение данных из облака…</div>
+
+<div id="page-content" class="main-container hidden">
+
+    <!-- Общий винрейт -->
+    <section class="section-card">
+        <div class="section-head">
+            <span class="section-title">Общий винрейт</span>
+            <span class="section-meta" id="total-games-label">0 партий</span>
         </div>
+        <div class="winrate-grid" id="winrate-output"></div>
+    </section>
 
-        <div id="cloud-loader" class="status-bar">Получение данных из облака...</div>
-
-        <div id="view-total" class="hidden">
-            <div class="leaderboard-list" id="leaderboard-output"></div>
+    <!-- Статистика по ролям -->
+    <section class="section-card">
+        <div class="section-head">
+            <span class="section-title">Статистика по ролям</span>
         </div>
-
-        <div id="view-roles" class="hidden">
-            <div id="roles-output"></div>
+        <div class="pills-row" id="game-pills"></div>
+        <div class="table-wrap">
+            <table class="role-table" id="role-matrix">
+                <thead id="role-matrix-head"></thead>
+                <tbody id="role-matrix-body"></tbody>
+            </table>
         </div>
+    </section>
 
-        <div id="view-archive" class="hidden">
-            <div id="archive-output"></div>
+    <!-- Архив -->
+    <section class="section-card">
+        <div class="section-head">
+            <span class="section-title">Архив партий</span>
         </div>
-
-        <div id="view-admin" class="hidden">
-            <div id="admin-lock" style="text-align:center; padding: 30px 0;">
-                <input type="password" id="admin-pass" class="form-input" placeholder="Введите PIN-код модератора" style="max-width: 260px; margin-bottom: 12px; text-align: center;"><br>
-                <button class="btn-action" style="max-width: 260px;" onclick="checkPin()">Войти</button>
+        <div class="archive-toolbar">
+            <div class="filters">
+                <select id="filter-game" class="form-select" onchange="renderArchive()">
+                    <option value="">Все игры</option>
+                </select>
+                <select id="filter-player" class="form-select" onchange="renderArchive()">
+                    <option value="">Все игроки</option>
+                </select>
             </div>
+            <button class="nav-btn primary" onclick="openSessionModal()">+ Добавить</button>
+            <button class="nav-btn" onclick="openSettingsModal()" title="Игры и игроки">⚙</button>
+        </div>
+        <div id="archive-output"></div>
+    </section>
+</div>
 
-            <div id="admin-form-block" class="hidden">
-                <form onsubmit="event.preventDefault(); sendSessionToCloud();">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                        <div>
-                            <label class="stamp" style="display:block; margin-bottom:4px;">Дата сессии</label>
-                            <input type="date" id="f-date" class="form-input" required>
-                        </div>
-                        <div>
-                            <label class="stamp" style="display:block; margin-bottom:4px;">Выбор дисциплины</label>
-                            <select id="f-game" class="form-select" onchange="syncRoleDropdowns()" required>
-                                <option value="Секретный Гитлер">Секретный Гитлер</option>
-                                <option value="Письма Призрака">Письма Призрака</option>
-                                <option value="Накорми кракена">Накорми кракена</option>
-                            </select>
-                        </div>
-                    </div>
+<!-- Modal: add/edit session -->
+<div id="session-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSessionModal()">
+    <div class="modal">
+        <h3 id="session-modal-title">Добавить партию</h3>
+        <form onsubmit="event.preventDefault(); saveSession();">
+            <div class="field">
+                <label class="stamp">Дата</label>
+                <input type="date" id="f-date" class="form-input" required>
+            </div>
+            <div class="field">
+                <label class="stamp">Игра</label>
+                <select id="f-game" class="form-select" style="width:100%" onchange="syncRoleDropdowns()" required></select>
+            </div>
+            <div class="field">
+                <label class="stamp">Итог (кто победил)</label>
+                <input type="text" id="f-winner" class="form-input" placeholder="Либералы, пираты…" required>
+            </div>
+            <div class="field" style="background:#0a0a14;padding:12px;border-radius:8px;border:1px solid #2d2d4e;">
+                <label class="stamp" style="color:#a78bfa;margin-bottom:8px;">Игроки и роли</label>
+                <div id="form-players-root"></div>
+                <button type="button" class="nav-btn" style="width:100%;margin-top:6px;font-size:12px;" onclick="buildPlayerRow()">+ Участник</button>
+            </div>
+            <div class="field">
+                <label class="stamp">Заметки</label>
+                <input type="text" id="f-notes" class="form-input" placeholder="Необязательно">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-action secondary" onclick="closeSessionModal()">Отмена</button>
+                <button type="submit" class="btn-action">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-                    <div style="margin-bottom: 12px;">
-                        <label class="stamp" style="display:block; margin-bottom:4px;">Кто победил</label>
-                        <input type="text" id="f-winner" class="form-input" placeholder="Например: Либералы, Пираты или Азирет" required>
-                    </div>
-
-                    <div style="background: #0a0a14; padding: 14px; border-radius: 8px; border: 1px solid #2d2d4e; margin-bottom: 12px;">
-                        <span class="stamp" style="display:block; margin-bottom:10px; color:#a78bfa;">Игроки и роли</span>
-                        <div id="form-players-root"></div>
-                        <button type="button" class="nav-btn" style="width:100%; font-size:12px;" onclick="buildPlayerRow()">+ Добавить участника</button>
-                    </div>
-
-                    <div style="margin-bottom: 16px;">
-                        <label class="stamp" style="display:block; margin-bottom:4px;">Заметки</label>
-                        <input type="text" id="f-notes" class="form-input" placeholder="Краткий комментарий к игре...">
-                    </div>
-
-                    <button type="submit" class="btn-action">⚡ Отправить сессию в облако</button>
-                </form>
+<!-- Modal: settings (games + players) -->
+<div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSettingsModal()">
+    <div class="modal">
+        <h3>Настройки архива</h3>
+        <p style="font-size:12px;color:#64748b;margin-bottom:14px;">PIN: <code style="color:#a78bfa">1234</code></p>
+        <div id="settings-lock">
+            <input type="password" id="settings-pass" class="form-input" placeholder="PIN модератора" style="margin-bottom:10px;">
+            <button class="btn-action" onclick="unlockSettings()">Войти</button>
+        </div>
+        <div id="settings-body" class="hidden">
+            <div class="field">
+                <label class="stamp">Игроки (по одному в строке)</label>
+                <textarea id="cfg-players" class="form-input" rows="4" style="resize:vertical;"></textarea>
+            </div>
+            <div class="field">
+                <label class="stamp">Игры — формат: <code>Название | Роль1, Роль2</code></label>
+                <textarea id="cfg-games" class="form-input" rows="6" style="resize:vertical;font-family:monospace;font-size:12px;"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-action secondary" onclick="closeSettingsModal()">Отмена</button>
+                <button type="button" class="btn-action" onclick="saveSettings()">Сохранить в облако</button>
             </div>
         </div>
-
     </div>
 </div>
 
 <script>
-// =========================================================================
-// НАСТРОЙКА ОБЛАЧНОГО ХРАНИЛИЩА (ВАШИ КЛЮЧИ)
-// =========================================================================
-const BIN_ID = '6a19516421f9ee59d298c40c'; 
-const API_KEY = '$2a$10$BQqbVX0PNe3qvydalu6fY.42sB0PTWdxvPWbx4RVscVOnfank0A6W'; 
-// =========================================================================
+// ── JSONBin (ключи — вынесите в отдельный бэкенд для продакшена) ──
+const BIN_ID = '6a19516421f9ee59d298c40c';
+const API_KEY = '$2a$10$BQqbVX0PNe3qvydalu6fY.42sB0PTWdxvPWbx4RVscVOnfank0A6W';
+const MOD_PIN = '1234';
 
-const REPO_PLAYERS = ["Азирет", "Дияр", "Танай"];
-const MAP_ROLES = {
-    "Секретный Гитлер": ["Либерал", "Фашист", "Гитлер"],
-    "Письма Призрака": ["Призрак", "Детектив", "Убийца"],
-    "Накорми кракена": ["Матрос", "Пират", "Сектант"]
+const DEFAULT_STATE = {
+    players: ['Medet', 'Nikita', 'Tanay', 'Aziret'],
+    games: [
+        { name: 'Секретный Гитлер', roles: ['Либерал', 'Фашист', 'Гитлер'] },
+        { name: 'Письма Призрака', roles: ['Призрак', 'Детектив', 'Убийца'] },
+        { name: 'Накорми Кракена', roles: ['Матрос', 'Пират', 'Сектант'] },
+        { name: 'Доминион', roles: ['Игрок'] }
+    ],
+    sessions: []
 };
 
-let GLOBAL_GAMES = [];
+let STATE = structuredClone(DEFAULT_STATE);
+let activeGameIndex = 0;
+let editingSessionId = null;
 
-function switchTab(id, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('view-total').classList.toggle('hidden', id !== 'total');
-    document.getElementById('view-roles').classList.toggle('hidden', id !== 'roles');
-    document.getElementById('view-archive').classList.toggle('hidden', id !== 'archive');
-    document.getElementById('view-admin').classList.toggle('hidden', id !== 'admin');
+function apiHeaders(json = false) {
+    const h = { 'X-Bin-Meta': 'false' };
+    if (json) h['Content-Type'] = 'application/json';
+    if (API_KEY.startsWith('$2a$') || API_KEY.startsWith('$2b$')) h['X-Master-Key'] = API_KEY;
+    else h['X-Access-Key'] = API_KEY;
+    return h;
 }
 
-// ИСПРАВЛЕННЫЙ БЕЗОПАСНЫЙ МЕТОД ЗАГРУЗКИ БЕЗ СУФФИКСА /latest
+function setSyncStatus(ok, text) {
+    const el = document.getElementById('sync-status');
+    const txt = document.getElementById('sync-text');
+    el.className = 'sync-pill ' + (ok ? 'ok' : 'err');
+    txt.textContent = text;
+}
+
+function normalizeLoaded(raw) {
+    if (Array.isArray(raw)) {
+        return { ...structuredClone(DEFAULT_STATE), sessions: raw };
+    }
+    if (raw && Array.isArray(raw.sessions)) {
+        return {
+            players: raw.players?.length ? raw.players : DEFAULT_STATE.players,
+            games: raw.games?.length ? raw.games : DEFAULT_STATE.games,
+            sessions: raw.sessions
+        };
+    }
+    return structuredClone(DEFAULT_STATE);
+}
+
 async function loadCloudData() {
     try {
-        const headers = { 'X-Bin-Meta': 'false' };
-        if (API_KEY.startsWith('$2a$') || API_KEY.startsWith('$2b$')) {
-            headers['X-Master-Key'] = API_KEY;
-        } else {
-            headers['X-Access-Key'] = API_KEY;
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, { headers: apiHeaders() });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `HTTP ${res.status}`);
         }
-
-        // Запрашиваем корень бина напрямую (работает при любом состоянии версионирования)
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, { headers });
-        
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.message || `Статус: ${response.status}`);
-        }
-
-        let result = await response.json();
-        
-        // Разворачиваем структуру, если сервер вернул её вместе с метаданными
-        if (result && result.record) {
-            GLOBAL_GAMES = result.record;
-        } else {
-            GLOBAL_GAMES = result;
-        }
-
-        // Если бин был абсолютно чистым (прилетел объект {}), превращаем его в пустой массив
-        if (!Array.isArray(GLOBAL_GAMES)) {
-            GLOBAL_GAMES = [];
-        }
-
-        document.getElementById("cloud-loader").classList.add("hidden");
-        document.getElementById("view-total").classList.remove("hidden");
-        updateAllViews();
+        const result = await res.json();
+        STATE = normalizeLoaded(result.record ?? result);
+        setSyncStatus(true, 'Мастер');
+        document.getElementById('page-loader').classList.add('hidden');
+        document.getElementById('page-content').classList.remove('hidden');
+        refreshAll();
     } catch (e) {
-        document.getElementById("cloud-loader").textContent = `Ошибка подключения: ${e.message}. Проверьте состояние Бина в панели JSONBin.`;
+        setSyncStatus(false, 'Failed to fetch');
+        document.getElementById('page-loader').textContent =
+            `Ошибка подключения: ${e.message}. Проверьте BIN_ID, ключ и CORS в панели JSONBin.`;
         console.error(e);
     }
 }
 
-function updateAllViews() {
-    renderLeaderboard();
-    renderCategorizedTables();
+async function pushToCloud() {
+    const headers = apiHeaders(true);
+    headers['X-Bin-Versioning'] = 'false';
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: 'PUT', headers, body: JSON.stringify(STATE)
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    setSyncStatus(true, 'Мастер');
+}
+
+function refreshAll() {
+    populateFilters();
+    renderWinrate();
+    renderGamePills();
+    renderRoleMatrix();
     renderArchive();
 }
 
-// 1. ОБЩИЙ ВИНРЕЙТ
-function renderLeaderboard() {
-    const root = document.getElementById("leaderboard-output");
-    root.innerHTML = "";
+function partyCount() {
+    return STATE.sessions.length;
+}
+
+function gamesLabel(n) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return `${n} партия`;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return `${n} партии`;
+    return `${n} партий`;
+}
+
+// ── 1. Общий винрейт (карточки как на макете) ──
+function renderWinrate() {
+    const root = document.getElementById('winrate-output');
+    document.getElementById('total-games-label').textContent = gamesLabel(partyCount());
 
     const counts = {};
-    REPO_PLAYERS.forEach(p => counts[p] = { t: 0, w: 0, l: 0 });
+    STATE.players.forEach(p => { counts[p] = { w: 0, l: 0, t: 0 }; });
 
-    GLOBAL_GAMES.forEach(g => {
-        if (!g.roles || !Array.isArray(g.roles)) return;
-        g.roles.forEach(r => {
-            if (counts[r.player]) {
-                counts[r.player].t++;
-                if (r.won) counts[r.player].w++; else counts[r.player].l++;
-            }
+    STATE.sessions.forEach(s => {
+        (s.roles || []).forEach(r => {
+            if (!counts[r.player]) return;
+            counts[r.player].t++;
+            if (r.won) counts[r.player].w++; else counts[r.player].l++;
         });
     });
 
-    const dataset = REPO_PLAYERS.map(p => {
-        const c = counts[p];
-        const pct = c.t > 0 ? Math.round((c.w / c.t) * 100) : 0;
-        return { name: p, ...c, pct };
-    }).sort((a, b) => b.pct - a.pct);
-
-    dataset.forEach((p, i) => {
-        const rank = i + 1;
-        const clr = p.pct >= 50 ? '#10b981' : '#f43f5e';
-        const el = document.createElement("div");
-        el.className = `leaderboard-item rank-${rank}`;
-        el.innerHTML = `
-            <div class="lb-rank">#0${rank}</div>
-            <div class="lb-name">${p.name}</div>
-            <div class="lb-details">
-                <div class="lb-games">Матчей: ${p.t}</div>
-                <div class="lb-wl"><span class="w">${p.w}W</span> — <span class="l">${p.l}L</span></div>
-                <div class="lb-progress-wrapper">
-                    <div class="p-bar-bg"><div class="p-bar-fill" style="width:${p.pct}%; background:${clr}; box-shadow:0 0 6px ${clr}50;"></div></div>
-                </div>
-                <div class="lb-pct" style="color:${clr};">${p.pct}%</div>
-            </div>
-        `;
-        root.appendChild(el);
-    });
-}
-
-// 2. СТАТИСТИКА ПО РОЛЯМ
-function renderCategorizedTables() {
-    const root = document.getElementById("roles-output");
-    root.innerHTML = "";
-
-    const cache = {};
-    Object.keys(MAP_ROLES).forEach(game => cache[game] = {});
-
-    GLOBAL_GAMES.forEach(session => {
-        if (!cache[session.game] || !session.roles) return;
-        session.roles.forEach(r => {
-            const key = `${r.player}|||${r.role}`;
-            if (!cache[session.game][key]) cache[session.game][key] = { t: 0, w: 0 };
-            cache[session.game][key].t++;
-            if (r.won) cache[session.game][key].w++;
-        });
-    });
-
-    for (let gameName in cache) {
-        const box = document.createElement("div");
-        box.className = "game-box";
-        
-        let rowsHtml = "";
-        const subData = cache[gameName];
-
-        for (let pair in subData) {
-            const [player, role] = pair.split("|||");
-            const s = subData[pair];
-            const losses = s.t - s.w;
-            const pct = Math.round((s.w / s.t) * 100);
-            const clr = pct >= 50 ? '#10b981' : '#f43f5e';
-
-            rowsHtml += `
-                <tr>
-                    <td style="font-weight:600;">${player}</td>
-                    <td style="font-family:monospace; color:#a78bfa;">${role}</td>
-                    <td style="text-align:center; font-weight:bold;">${s.t}</td>
-                    <td style="text-align:center; font-family:monospace;"><span style="color:#10b981;">${s.w}</span> / <span style="color:#f43f5e;">${losses}</span></td>
-                    <td>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div class="p-bar-bg" style="flex:1; height:5px;"><div style="height:100%; width:${pct}%; background:${clr};"></div></div>
-                            <span style="font-family:monospace; font-weight:bold; color:${clr}">${pct}%</span>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }
-
-        if (rowsHtml === "") {
-            rowsHtml = `<tr><td colspan="5" style="text-align:center; color:#475569; padding:16px;">Нет записей для этой настольной игры</td></tr>`;
-        }
-
-        box.innerHTML = `
-            <div class="game-box-title">${gameName}</div>
-            <table class="table-spec">
-                <thead>
-                    <tr>
-                        <th>Игрок</th>
-                        <th>Роль</th>
-                        <th style="text-align:center;">Игр</th>
-                        <th style="text-align:center;">В / П</th>
-                        <th>Винрейт</th>
-                    </tr>
-                </thead>
-                <tbody>${rowsHtml}</tbody>
-            </table>
-        `;
-        root.appendChild(box);
-    }
-}
-
-// 3. АРХИВ ПАРТИЙ
-function renderArchive() {
-    const root = document.getElementById("archive-output");
-    root.innerHTML = "";
-
-    if (GLOBAL_GAMES.length === 0) {
-        root.innerHTML = `<div class="status-bar">История пуста. Добавьте первую игру через вкладку администратора.</div>`;
-        return;
-    }
-
-    GLOBAL_GAMES.forEach(g => {
-        const d = new Date(g.date);
-        const dStr = isNaN(d) ? g.date : d.toLocaleDateString("ru-RU");
-        const card = document.createElement("div");
-        card.className = "log-card";
-
-        const pGrid = g.roles ? g.roles.map(r => `
-            <div class="log-pill">
-                <span><strong>${r.player}</strong> <span style="color:#64748b; font-size:11px;">(${r.role})</span></span>
-                <span style="color:${r.won ? '#10b981' : '#f43f5e'}; font-weight:bold;">${r.won ? 'В' : 'П'}</span>
-            </div>
-        `).join("") : "";
-
+    root.innerHTML = '';
+    STATE.players.forEach(name => {
+        const c = counts[name];
+        const pct = c.t ? Math.round((c.w / c.t) * 100) : 0;
+        const card = document.createElement('div');
+        card.className = 'win-card';
         card.innerHTML = `
-            <div class="log-header">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span class="log-tag">${g.game}</span>
-                    <span class="log-date">${dStr}</span>
-                </div>
-                <div class="log-winner">Победа: <b>${g.winner}</b></div>
-            </div>
-            <div class="log-grid">${pGrid}</div>
-            ${g.notes ? `<div class="log-notes">${g.notes}</div>` : ""}
+            <div class="name">${name}</div>
+            <div class="pct">${pct}%</div>
+            <div class="sub">${c.w}В / ${c.l}П / ${c.t}и</div>
+            <div class="bar"><div class="bar-fill" style="width:${pct}%"></div></div>
         `;
         root.appendChild(card);
     });
 }
 
-// УПРАВЛЕНИЕ ФОРМОЙ МОДЕРАТОРА
-function checkPin() {
-    if (document.getElementById("admin-pass").value === "1234") {
-        document.getElementById("admin-lock").classList.add("hidden");
-        document.getElementById("admin-form-block").classList.remove("hidden");
-        document.getElementById("f-date").valueAsDate = new Date();
-        document.getElementById("form-players-root").innerHTML = "";
-        REPO_PLAYERS.forEach(p => buildPlayerRow(p));
-    } else {
-        alert("Неверный PIN модератора.");
+// ── 2. Матрица ролей (игрок × роль → В / П / %) ──
+function renderGamePills() {
+    const row = document.getElementById('game-pills');
+    row.innerHTML = '';
+    if (!STATE.games.length) {
+        row.innerHTML = '<span class="empty-hint">Добавьте игры в ⚙ настройках</span>';
+        return;
     }
+    if (activeGameIndex >= STATE.games.length) activeGameIndex = 0;
+
+    STATE.games.forEach((g, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'pill' + (i === activeGameIndex ? ' active' : '');
+        btn.textContent = g.name;
+        btn.onclick = () => { activeGameIndex = i; renderGamePills(); renderRoleMatrix(); };
+        row.appendChild(btn);
+    });
 }
 
-function buildPlayerRow(preset = "") {
-    const root = document.getElementById("form-players-root");
-    const div = document.createElement("div");
-    div.className = "player-row";
+function cellStats(map, player, role) {
+    const key = `${player}|||${role}`;
+    const s = map[key];
+    if (!s || !s.t) return { w: '—', l: '—', pct: '—', raw: null };
+    const l = s.t - s.w;
+    const pct = Math.round((s.w / s.t) * 100);
+    return { w: s.w, l, pct: `${pct}%`, raw: pct };
+}
 
-    const pOpts = REPO_PLAYERS.map(p => `<option value="${p}" ${preset === p ? 'selected' : ''}>${p}</option>`).join("");
+function renderRoleMatrix() {
+    const head = document.getElementById('role-matrix-head');
+    const body = document.getElementById('role-matrix-body');
+    const game = STATE.games[activeGameIndex];
+    if (!game) {
+        head.innerHTML = '';
+        body.innerHTML = '<tr><td class="empty-hint" colspan="99">Нет игр в конфиге</td></tr>';
+        return;
+    }
 
+    const roles = game.roles;
+    let headRow1 = '<tr><th class="player-col">Игрок</th>';
+    let headRow2 = '<tr><th class="player-col"></th>';
+    roles.forEach(r => {
+        headRow1 += `<th class="group" colspan="3">${r}</th>`;
+        headRow2 += '<th class="group">В</th><th class="group">П</th><th class="group">%</th>';
+    });
+    headRow1 += '<th class="group" colspan="3">Итого</th></tr>';
+    headRow2 += '<th class="group">В</th><th class="group">П</th><th class="group">%</th></tr>';
+    head.innerHTML = headRow1 + headRow2;
+
+    const map = {};
+    STATE.sessions.filter(s => s.game === game.name).forEach(s => {
+        (s.roles || []).forEach(r => {
+            const key = `${r.player}|||${r.role}`;
+            if (!map[key]) map[key] = { t: 0, w: 0 };
+            map[key].t++;
+            if (r.won) map[key].w++;
+        });
+    });
+
+    const playersInGame = new Set();
+    STATE.sessions.filter(s => s.game === game.name).forEach(s =>
+        (s.roles || []).forEach(r => playersInGame.add(r.player))
+    );
+    const rows = STATE.players.filter(p => playersInGame.has(p));
+    if (!rows.length) rows.push(...STATE.players);
+
+    body.innerHTML = '';
+    rows.forEach(player => {
+        let totalT = 0, totalW = 0;
+        let cells = `<td class="player-name">${player}</td>`;
+
+        roles.forEach(role => {
+            const st = cellStats(map, player, role);
+            if (st.raw !== null) { totalT += map[`${player}|||${role}`].t; totalW += map[`${player}|||${role}`].w; }
+            const dash = v => v === '—' ? '<span class="dash">—</span>' : v;
+            cells += `<td class="group">${dash(st.w)}</td><td class="group">${dash(st.l)}</td><td class="group pct-cell">${dash(st.pct)}</td>`;
+        });
+
+        const totL = totalT - totalW;
+        const totPct = totalT ? `${Math.round((totalW / totalT) * 100)}%` : '—';
+        cells += `<td class="group">${totalT ? totalW : '<span class="dash">—</span>'}</td>`;
+        cells += `<td class="group">${totalT ? totL : '<span class="dash">—</span>'}</td>`;
+        cells += `<td class="group pct-cell">${totalT ? totPct : '<span class="dash">—</span>'}</td>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = cells;
+        body.appendChild(tr);
+    });
+}
+
+// ── 3. Архив с фильтрами и группировкой по дате ──
+function populateFilters() {
+    const fg = document.getElementById('filter-game');
+    const fp = document.getElementById('filter-player');
+    const gVal = fg.value, pVal = fp.value;
+
+    fg.innerHTML = '<option value="">Все игры</option>' +
+        STATE.games.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+    fp.innerHTML = '<option value="">Все игроки</option>' +
+        STATE.players.map(p => `<option value="${p}">${p}</option>`).join('');
+
+    fg.value = gVal; fp.value = pVal;
+    syncGameSelect();
+}
+
+function syncGameSelect() {
+    const sel = document.getElementById('f-game');
+    sel.innerHTML = STATE.games.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+}
+
+function renderArchive() {
+    const root = document.getElementById('archive-output');
+    const fGame = document.getElementById('filter-game').value;
+    const fPlayer = document.getElementById('filter-player').value;
+
+    let list = [...STATE.sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+    if (fGame) list = list.filter(s => s.game === fGame);
+    if (fPlayer) list = list.filter(s => (s.roles || []).some(r => r.player === fPlayer));
+
+    if (!list.length) {
+        root.innerHTML = '<div class="empty-hint">Пока нет партий. Нажмите «+ Добавить».</div>';
+        return;
+    }
+
+    const byDate = {};
+    list.forEach(s => {
+        const key = s.date || 'unknown';
+        if (!byDate[key]) byDate[key] = [];
+        byDate[key].push(s);
+    });
+
+    root.innerHTML = '';
+    Object.keys(byDate).sort((a, b) => new Date(b) - new Date(a)).forEach(dateKey => {
+        const d = new Date(dateKey);
+        const label = isNaN(d)
+            ? dateKey
+            : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+
+        const lbl = document.createElement('div');
+        lbl.className = 'date-label';
+        lbl.textContent = label;
+        root.appendChild(lbl);
+
+        byDate[dateKey].forEach(s => {
+            const participants = (s.roles || []).map(r => r.player).join(', ');
+            const rolesHtml = (s.roles || []).map(r => {
+                const mark = r.won ? '<span class="won">✓</span>' : '<span class="lost">✗</span>';
+                return `<span class="log-role-line">${r.player}: ${r.role} ${mark}</span>`;
+            }).join('');
+
+            const card = document.createElement('div');
+            card.className = 'log-card';
+            card.innerHTML = `
+                <div class="log-top">
+                    <div>
+                        <div class="log-game">${s.game}</div>
+                        <div class="log-meta">Участники: <b>${participants || '—'}</b></div>
+                        <div class="log-meta">Итог: <b>${s.winner || '—'}</b></div>
+                    </div>
+                    <div class="log-actions">
+                        <button class="icon-btn" title="Изменить" onclick="editSession(${s.id})">✎</button>
+                        <button class="icon-btn danger" title="Удалить" onclick="deleteSession(${s.id})">×</button>
+                    </div>
+                </div>
+                <div class="log-roles">${rolesHtml}</div>
+                ${s.notes ? `<div class="log-notes">${s.notes}</div>` : ''}
+            `;
+            root.appendChild(card);
+        });
+    });
+}
+
+// ── Session modal ──
+function openSessionModal() {
+    editingSessionId = null;
+    document.getElementById('session-modal-title').textContent = 'Добавить партию';
+    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('f-winner').value = '';
+    document.getElementById('f-notes').value = '';
+    document.getElementById('form-players-root').innerHTML = '';
+    STATE.players.forEach(p => buildPlayerRow(p));
+    syncGameSelect();
+    syncRoleDropdowns();
+    document.getElementById('session-modal').classList.remove('hidden');
+}
+
+function closeSessionModal() {
+    document.getElementById('session-modal').classList.add('hidden');
+    editingSessionId = null;
+}
+
+function editSession(id) {
+    const s = STATE.sessions.find(x => x.id === id);
+    if (!s) return;
+    editingSessionId = id;
+    document.getElementById('session-modal-title').textContent = 'Изменить партию';
+    document.getElementById('f-date').value = s.date;
+    document.getElementById('f-game').value = s.game;
+    document.getElementById('f-winner').value = s.winner || '';
+    document.getElementById('f-notes').value = s.notes || '';
+    document.getElementById('form-players-root').innerHTML = '';
+    (s.roles || []).forEach(r => buildPlayerRow(r.player, r.role, r.won));
+    syncRoleDropdowns();
+    document.getElementById('session-modal').classList.remove('hidden');
+}
+
+function buildPlayerRow(presetPlayer = '', presetRole = '', presetWon = true) {
+    const root = document.getElementById('form-players-root');
+    const div = document.createElement('div');
+    div.className = 'player-row';
+    const pOpts = STATE.players.map(p =>
+        `<option value="${p}" ${presetPlayer === p ? 'selected' : ''}>${p}</option>`
+    ).join('') + '<option value="Гость">[Гость]</option>';
     div.innerHTML = `
-        <select class="form-select src-p" style="flex:1;">${pOpts}<option value="Гость">[Гость]</option></select>
-        <select class="form-select src-r" style="flex:1.2;"></select>
-        <select class="form-select src-w" style="width:90px;"><option value="true">Вин</option><option value="false">Лоз</option></select>
-        <button type="button" style="background:none; border:none; color:#f43f5e; font-size:18px; padding:0 6px; cursor:pointer;" onclick="this.parentElement.remove()">&times;</button>
+        <select class="form-select src-p" style="flex:1">${pOpts}</select>
+        <select class="form-select src-r" style="flex:1.2"></select>
+        <select class="form-select src-w" style="width:88px">
+            <option value="true">Вин</option>
+            <option value="false">Лоз</option>
+        </select>
+        <button type="button" class="icon-btn danger" onclick="this.parentElement.remove()">×</button>
     `;
     root.appendChild(div);
     syncRoleDropdowns();
+    const row = root.lastElementChild;
+    if (presetRole) row.querySelector('.src-r').value = presetRole;
+    row.querySelector('.src-w').value = presetWon ? 'true' : 'false';
+}
+
+function rolesForGame(name) {
+    const g = STATE.games.find(x => x.name === name);
+    return g ? g.roles : [];
 }
 
 function syncRoleDropdowns() {
-    const game = document.getElementById("f-game").value;
-    const roles = MAP_ROLES[game] || [];
-
-    document.querySelectorAll(".player-row").forEach(row => {
-        const selectRole = row.querySelector(".src-r");
-        const cachedVal = selectRole.value;
-        selectRole.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join("");
-        if (roles.includes(cachedVal)) selectRole.value = cachedVal;
+    const roles = rolesForGame(document.getElementById('f-game').value);
+    document.querySelectorAll('.player-row').forEach(row => {
+        const sel = row.querySelector('.src-r');
+        const prev = sel.value;
+        sel.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+        if (roles.includes(prev)) sel.value = prev;
     });
 }
 
-// ОТПРАВКА СЕССИИ В ОБЛАКО
-async function sendSessionToCloud() {
-    const date = document.getElementById("f-date").value;
-    const game = document.getElementById("f-game").value;
-    const winner = document.getElementById("f-winner").value.trim();
-    const notes = document.getElementById("f-notes").value.trim();
+async function saveSession() {
+    const date = document.getElementById('f-date').value;
+    const game = document.getElementById('f-game').value;
+    const winner = document.getElementById('f-winner').value.trim();
+    const notes = document.getElementById('f-notes').value.trim();
+    const rows = document.querySelectorAll('.player-row');
+    if (!rows.length) return alert('Добавьте хотя бы одного игрока.');
 
-    const rows = document.querySelectorAll(".player-row");
-    if(rows.length === 0) return alert("Добавьте игроков!");
-
-    const rolesArr = [];
+    const roles = [];
     rows.forEach(r => {
-        rolesArr.push({
-            player: r.querySelector(".src-p").value,
-            role: r.querySelector(".src-r").value,
-            won: r.querySelector(".src-w").value === "true"
+        roles.push({
+            player: r.querySelector('.src-p').value,
+            role: r.querySelector('.src-r').value,
+            won: r.querySelector('.src-w').value === 'true'
         });
     });
 
-    const sessionObj = { id: Date.now(), date, game, winner, notes, roles: rolesArr };
-    
-    // Пушим в локальный массив
-    GLOBAL_GAMES.unshift(sessionObj);
+    const session = { id: editingSessionId || Date.now(), date, game, winner, notes, roles };
 
-    const loader = document.getElementById("cloud-loader");
-    loader.textContent = "Синхронизация записи с сервером...";
-    loader.classList.remove("hidden");
+    if (editingSessionId) {
+        const i = STATE.sessions.findIndex(s => s.id === editingSessionId);
+        if (i >= 0) STATE.sessions[i] = session;
+    } else {
+        STATE.sessions.unshift(session);
+    }
 
     try {
-        const headers = { 
-            'Content-Type': 'application/json',
-            'X-Bin-Versioning': 'false'
-        };
-        if (API_KEY.startsWith('$2a$') || API_KEY.startsWith('$2b$')) {
-            headers['X-Master-Key'] = API_KEY;
-        } else {
-            headers['X-Access-Key'] = API_KEY;
-        }
+        await pushToCloud();
+        closeSessionModal();
+        refreshAll();
+    } catch (e) {
+        alert(`Ошибка сохранения: ${e.message}`);
+        await loadCloudData();
+    }
+}
 
-        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-            method: 'PUT',
-            headers: headers,
-            body: JSON.stringify(GLOBAL_GAMES)
-        });
+async function deleteSession(id) {
+    if (!confirm('Удалить эту партию из архива?')) return;
+    STATE.sessions = STATE.sessions.filter(s => s.id !== id);
+    try {
+        await pushToCloud();
+        refreshAll();
+    } catch (e) {
+        alert(`Ошибка: ${e.message}`);
+        await loadCloudData();
+    }
+}
 
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.message || `Код ответа: ${response.status}`);
-        }
+// ── Settings: dynamic games & players ──
+function openSettingsModal() {
+    document.getElementById('settings-modal').classList.remove('hidden');
+    document.getElementById('settings-lock').classList.remove('hidden');
+    document.getElementById('settings-body').classList.add('hidden');
+    document.getElementById('settings-pass').value = '';
+}
 
-        alert("Успешно синхронизировано с облаком!");
-        document.getElementById("f-winner").value = "";
-        document.getElementById("f-notes").value = "";
-        
-        updateAllViews();
-        switchTab('archive', document.querySelectorAll('.tab-btn')[2]);
-    } catch(e) {
-        GLOBAL_GAMES.shift(); // Откатываем локальный массив назад при сбое
-        alert(`Ошибка JSONBin:\n"${e.message}"`);
-    } finally {
-        loader.classList.add("hidden");
+function closeSettingsModal() {
+    document.getElementById('settings-modal').classList.add('hidden');
+}
+
+function unlockSettings() {
+    if (document.getElementById('settings-pass').value !== MOD_PIN) {
+        alert('Неверный PIN.');
+        return;
+    }
+    document.getElementById('settings-lock').classList.add('hidden');
+    document.getElementById('settings-body').classList.remove('hidden');
+    document.getElementById('cfg-players').value = STATE.players.join('\n');
+    document.getElementById('cfg-games').value = STATE.games
+        .map(g => `${g.name} | ${g.roles.join(', ')}`).join('\n');
+}
+
+function parseGamesText(text) {
+    return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+        const [name, rolesPart] = line.split('|').map(s => s.trim());
+        const roles = (rolesPart || 'Игрок').split(',').map(r => r.trim()).filter(Boolean);
+        return { name, roles };
+    });
+}
+
+async function saveSettings() {
+    const players = document.getElementById('cfg-players').value
+        .split('\n').map(s => s.trim()).filter(Boolean);
+    const games = parseGamesText(document.getElementById('cfg-games').value);
+    if (!players.length || !games.length) {
+        return alert('Нужен хотя бы один игрок и одна игра.');
+    }
+    STATE.players = players;
+    STATE.games = games;
+    try {
+        await pushToCloud();
+        closeSettingsModal();
+        refreshAll();
+        alert('Настройки сохранены.');
+    } catch (e) {
+        alert(`Ошибка: ${e.message}`);
     }
 }
 
