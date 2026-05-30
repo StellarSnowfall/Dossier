@@ -84,6 +84,28 @@ body {
     display:block;
     background: transparent;
 }
+.mmr-rank-wrap {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+.mmr-rank-badge {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+}
+.mmr-rank-label {
+    font-size: 10px;
+    color: #64748b;
+    text-align: center;
+    letter-spacing: 0.3px;
+    line-height: 1.3;
+    max-width: 140px;
+}
 
 .id-section {padding:24px; display:flex; flex-direction:column; justify-content: center; gap:14px}
 .char-name {font-size:32px; font-weight:600; color:#f8fafc; letter-spacing: 0.5px;}
@@ -211,6 +233,10 @@ canvas {display:block; margin-top: 10px;}
     <div class="photo-area">
       <div class="avatar-circle" id="char-avatar">
         <img id="char-img" src="" alt="Avatar">
+      </div>
+      <div class="mmr-rank-wrap">
+        <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/mmr/Uncalibrated.png" alt="MMR">
+        <span id="char-mmr-label" class="mmr-rank-label"></span>
       </div>
     </div>
     <div class="id-section">
@@ -635,6 +661,7 @@ function loadChar(i) {
   }).join("");
   
   drawRadar({ ...c, stats, accent });
+  updateMmrBadge(c.name);
 }
 
 function switchTab(tab, btn) {
@@ -724,8 +751,299 @@ function drawRadar(c) {
   });
 }
 
-initSelectors();
-loadChar(0);
+// ── MMR из архива статистики (Supabase) ──
+const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';
+const MMR_UNCALIBRATED = 'Img/mmr/Uncalibrated.png';
+const ARCHIVE_FALLBACK_URL = './data/archive.json';
+
+const MMR_TIERS = [
+  { min: 0,    prefix: 'recruit',  label: 'Recruit' },
+  { min: 1000, prefix: 'Guardian', label: 'Guardian' },
+  { min: 1500, prefix: 'Crusader', label: 'Crusader' },
+  { min: 2000, prefix: 'Archon',   label: 'Archon' },
+  { min: 2500, prefix: 'Legend',   label: 'Legend' },
+  { min: 3000, prefix: 'Ancient',  label: 'Ancient' },
+  { min: 3500, prefix: 'Divine',   label: 'Divine' },
+  { min: 4000, prefix: 'Titan',    label: 'Titan' }
+];
+
+const DEFAULT_MMR = {
+  version: 1,
+  startedAt: '2026-05-29',
+  calibrationGames: 10,
+  baseMmr: 1000,
+  kFactor: 32,
+  kCalibration: 64,
+  ratings: {}
+};
+
+let ARCHIVE = null;
+
+function defaultPlayerRating(baseMmr) {
+  return {
+    hiddenMmr: baseMmr,
+    mmr: null,
+    calibrationPlayed: 0,
+    manualOffset: 0,
+    manualLock: false,
+    calibratedAt: null
+  };
+}
+
+function normalizeArchive(raw) {
+  if (!raw) return null;
+  const payload = Array.isArray(raw) ? { sessions: raw } : raw;
+  if (!Array.isArray(payload.sessions)) return null;
+
+  const players = payload.players?.length ? payload.players : chars.map(c => c.name);
+  const games = (payload.games?.length ? payload.games : []).map(g => ({
+    ...g,
+    mmrType: g.mmrType || ((g.roles && g.roles.length) ? 'team' : 'ffa')
+  }));
+
+  const mmr = {
+    ...structuredClone(DEFAULT_MMR),
+    ...(payload.mmr || {}),
+    ratings: { ...(payload.mmr?.ratings || {}) }
+  };
+  const base = mmr.baseMmr ?? DEFAULT_MMR.baseMmr;
+  players.forEach(name => {
+    if (!mmr.ratings[name]) mmr.ratings[name] = defaultPlayerRating(base);
+  });
+
+  return { players, games, sessions: payload.sessions, mmr };
+}
+
+function isSessionMmrEligible(session) {
+  if (!session?.date || !ARCHIVE?.mmr?.startedAt) return false;
+  return session.date >= ARCHIVE.mmr.startedAt;
+}
+
+function getGameMmrType(gameName) {
+  const g = ARCHIVE.games.find(x => x.name === gameName);
+  if (g?.mmrType) return g.mmrType;
+  return (g?.roles?.length) ? 'team' : 'ffa';
+}
+
+function expectedScore(ratingA, ratingB) {
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+}
+
+function applyEloPair(winnerRating, loserRating, k) {
+  const e = expectedScore(winnerRating, loserRating);
+  const delta = k * (1 - e);
+  return { winDelta: delta, loseDelta: -delta };
+}
+
+function trackedRoles(session) {
+  return (session.roles || []).filter(r => ARCHIVE.players.includes(r.player));
+}
+
+function resolveFfaDeltas(session, getRating, k) {
+  const roles = trackedRoles(session);
+  const winners = roles.filter(r => r.won);
+  const losers = roles.filter(r => !r.won);
+  if (!winners.length || !losers.length) return null;
+
+  const deltas = {};
+  const init = p => { if (deltas[p] === undefined) deltas[p] = 0; };
+
+  winners.forEach(w => {
+    losers.forEach(l => {
+      const { winDelta, loseDelta } = applyEloPair(
+        getRating(w.player), getRating(l.player), k / losers.length
+      );
+      init(w.player);
+      init(l.player);
+      deltas[w.player] += winDelta / winners.length;
+      deltas[l.player] += loseDelta / winners.length;
+    });
+  });
+  return deltas;
+}
+
+function resolveTeamDeltas(session, getRating, k) {
+  const roles = trackedRoles(session);
+  const winTeam = roles.filter(r => r.won).map(r => r.player);
+  const loseTeam = roles.filter(r => !r.won).map(r => r.player);
+  if (!winTeam.length || !loseTeam.length) return null;
+
+  const rWin = winTeam.reduce((s, p) => s + getRating(p), 0) / winTeam.length;
+  const rLose = loseTeam.reduce((s, p) => s + getRating(p), 0) / loseTeam.length;
+  const { winDelta, loseDelta } = applyEloPair(rWin, rLose, k);
+
+  const deltas = {};
+  winTeam.forEach(p => { deltas[p] = winDelta; });
+  loseTeam.forEach(p => { deltas[p] = loseDelta; });
+  return deltas;
+}
+
+function computeSessionDeltas(session) {
+  if (trackedRoles(session).length < 2) return null;
+  const cfg = ARCHIVE.mmr;
+  const getRating = p => cfg.ratings[p]?.hiddenMmr ?? cfg.baseMmr;
+  const mmrType = getGameMmrType(session.game);
+  return mmrType === 'ffa'
+    ? resolveFfaDeltas(session, getRating, cfg.kFactor)
+    : resolveTeamDeltas(session, getRating, cfg.kFactor);
+}
+
+function getPlayerK(player) {
+  const cfg = ARCHIVE.mmr;
+  const r = cfg.ratings[player];
+  if (!r) return cfg.kFactor;
+  return r.calibrationPlayed < cfg.calibrationGames ? cfg.kCalibration : cfg.kFactor;
+}
+
+function scaleDeltaForPlayer(delta, player) {
+  return delta * (getPlayerK(player) / ARCHIVE.mmr.kFactor);
+}
+
+function applyPlayerDelta(player, delta, sessionDate) {
+  const cfg = ARCHIVE.mmr;
+  const r = cfg.ratings[player];
+  if (!r || r.manualLock) return;
+
+  r.hiddenMmr = Math.round(r.hiddenMmr + Math.round(scaleDeltaForPlayer(delta, player)));
+  r.calibrationPlayed++;
+  if (r.calibrationPlayed >= cfg.calibrationGames) {
+    r.mmr = r.hiddenMmr;
+    if (!r.calibratedAt) r.calibratedAt = sessionDate;
+  }
+}
+
+function recalculateArchiveMmr() {
+  if (!ARCHIVE) return;
+  const cfg = ARCHIVE.mmr;
+  const locked = {};
+
+  ARCHIVE.players.forEach(name => {
+    const r = cfg.ratings[name];
+    if (r.manualLock) {
+      locked[name] = { ...r };
+    } else {
+      r.hiddenMmr = cfg.baseMmr;
+      r.mmr = null;
+      r.calibrationPlayed = 0;
+      r.calibratedAt = null;
+    }
+  });
+
+  ARCHIVE.sessions
+    .filter(isSessionMmrEligible)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .forEach(session => {
+      const deltas = computeSessionDeltas(session);
+      if (!deltas) return;
+      Object.entries(deltas).forEach(([player, delta]) => {
+        if (!ARCHIVE.players.includes(player)) return;
+        applyPlayerDelta(player, delta, session.date);
+      });
+    });
+
+  Object.assign(cfg.ratings, locked);
+}
+
+function getDisplayMmr(player) {
+  const r = ARCHIVE?.mmr?.ratings?.[player];
+  if (!r || r.mmr === null) return null;
+  return Math.round(r.mmr + (r.manualOffset || 0));
+}
+
+function getMmrLeaderboardRanks() {
+  const rows = ARCHIVE.players
+    .map(name => ({ name, mmr: getDisplayMmr(name) }))
+    .filter(r => r.mmr !== null)
+    .sort((a, b) => b.mmr - a.mmr);
+
+  const rankMap = new Map();
+  rows.forEach((row, i) => rankMap.set(row.name, i + 1));
+  return rankMap;
+}
+
+function getMmrBadgeSrc(mmr, leaderboardRank) {
+  if (leaderboardRank === 1) return 'Img/mmr/Titan-Top1.png';
+  if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/mmr/Titan-Top.png';
+  if (mmr >= 4000) return 'Img/mmr/Titan-default.png';
+
+  let tierIdx = 0;
+  for (let i = MMR_TIERS.length - 1; i >= 0; i--) {
+    if (mmr >= MMR_TIERS[i].min) { tierIdx = i; break; }
+  }
+  const tier = MMR_TIERS[tierIdx];
+  const nextMin = MMR_TIERS[tierIdx + 1]?.min ?? (tier.min + 1000);
+  const span = nextMin - tier.min;
+  const within = Math.max(0, mmr - tier.min);
+  const star = Math.min(5, Math.max(1, Math.floor(within / (span / 5)) + 1));
+  const file = tier.prefix === 'recruit'
+    ? `recruit-${star}star.png`
+    : `${tier.prefix}-${star}star.png`;
+  return `Img/mmr/${file}`;
+}
+
+function updateMmrBadge(playerName) {
+  const img = document.getElementById('char-mmr-badge');
+  const label = document.getElementById('char-mmr-label');
+  if (!img || !label) return;
+
+  if (!ARCHIVE) {
+    img.src = MMR_UNCALIBRATED;
+    img.alt = 'Калибровка';
+    label.textContent = 'Нет данных';
+    return;
+  }
+
+  const display = getDisplayMmr(playerName);
+  if (display === null) {
+    const r = ARCHIVE.mmr.ratings[playerName];
+    const cal = ARCHIVE.mmr.calibrationGames;
+    const played = r?.calibrationPlayed ?? 0;
+    img.src = MMR_UNCALIBRATED;
+    img.alt = 'Калибровка';
+    label.textContent = `Калибровка ${played}/${cal}`;
+    return;
+  }
+
+  const rank = getMmrLeaderboardRanks().get(playerName);
+  img.src = getMmrBadgeSrc(display, rank);
+  img.alt = `${display} MMR`;
+  label.textContent = `${display} MMR`;
+}
+
+async function loadArchiveMmr() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/archive?id=eq.1&select=data`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length) ARCHIVE = normalizeArchive(rows[0].data);
+    }
+  } catch (e) {
+    console.warn('MMR: Supabase недоступен', e);
+  }
+
+  if (!ARCHIVE) {
+    try {
+      const res = await fetch(ARCHIVE_FALLBACK_URL, { cache: 'no-store' });
+      if (res.ok) ARCHIVE = normalizeArchive(await res.json());
+    } catch (e) {
+      console.warn('MMR: fallback недоступен', e);
+    }
+  }
+
+  if (ARCHIVE) recalculateArchiveMmr();
+}
+
+async function boot() {
+  initSelectors();
+  await loadArchiveMmr();
+  loadChar(0);
+}
+
+boot();
 </script>
 </body>
 </html>
