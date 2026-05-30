@@ -85,18 +85,17 @@ body {
     background: transparent;
 }
 .mmr-rank-wrap {
-    margin-top: 14px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    width: 100%;
+    gap: 4px;
+    flex-shrink: 0;
 }
 .mmr-rank-badge {
-    width: 56px;
-    height: 56px;
+    width: 72px;
+    height: 72px;
     object-fit: contain;
-    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.5));
 }
 .mmr-rank-label {
     font-size: 10px;
@@ -104,16 +103,80 @@ body {
     text-align: center;
     letter-spacing: 0.3px;
     line-height: 1.3;
-    max-width: 140px;
+    white-space: nowrap;
 }
 
-.id-section {padding:24px; display:flex; flex-direction:column; justify-content: center; gap:14px}
-.char-name {font-size:32px; font-weight:600; color:#f8fafc; letter-spacing: 0.5px;}
+.id-section {padding:24px; display:flex; flex-direction:column; justify-content:center; gap:14px}
+.profile-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+.profile-identity { flex: 1; min-width: 0; }
+.char-name {font-size:32px; font-weight:600; color:#f8fafc; letter-spacing: 0.5px; line-height:1.1;}
 .meta-row {display:flex; gap:24px; margin-top:0px; flex-wrap:wrap}
 .meta-item {display:flex; flex-direction:column; gap:4px}
 .meta-label {font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:1px}
 .meta-value {font-size:14px; color:#cbd5e1; font-weight:500}
 .traits-row {display:flex; gap:8px; flex-wrap:wrap; margin-top:2px}
+
+/* Последние партии */
+.recent-games { margin-top: 4px; }
+.recent-games-title {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+.recent-games-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.recent-game-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 52px;
+}
+.recent-game-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #2d2d4e;
+    background: #0a0a14;
+}
+.recent-game-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.recent-game-icon.empty {
+    border-style: dashed;
+    border-color: #334155;
+    background: transparent;
+}
+.recent-game-status {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+}
+.recent-game-status .tri {
+    font-size: 8px;
+    line-height: 1;
+}
+.recent-game-status.win { color: #4ade80; }
+.recent-game-status.loss { color: #f87171; }
+.recent-game-status.empty { color: #475569; font-weight: 500; font-size: 10px; }
 
 /* Трейты - бэйджи */
 .trait-badge {
@@ -234,20 +297,28 @@ canvas {display:block; margin-top: 10px;}
       <div class="avatar-circle" id="char-avatar">
         <img id="char-img" src="" alt="Avatar">
       </div>
-      <div class="mmr-rank-wrap">
-        <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/Uncalibrated.png" alt="MMR">
-        <span id="char-mmr-label" class="mmr-rank-label"></span>
-      </div>
     </div>
     <div class="id-section">
-      <div class="char-name" id="char-name"></div>
-      <div class="meta-row">
-        <div class="meta-item">
-          <span class="meta-label">Фракция</span>
-          <span class="meta-value" id="char-faction"></span>
+      <div class="profile-header">
+        <div class="profile-identity">
+          <div class="char-name" id="char-name"></div>
+          <div class="meta-row">
+            <div class="meta-item">
+              <span class="meta-label">Фракция</span>
+              <span class="meta-value" id="char-faction"></span>
+            </div>
+          </div>
+        </div>
+        <div class="mmr-rank-wrap">
+          <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/Uncalibrated.png" alt="MMR">
+          <span id="char-mmr-label" class="mmr-rank-label"></span>
         </div>
       </div>
       <div class="traits-row" id="char-traits"></div>
+      <div class="recent-games">
+        <div class="recent-games-title">Последние партии</div>
+        <div class="recent-games-row" id="char-recent-games"></div>
+      </div>
     </div>
   </div>
 
@@ -627,7 +698,7 @@ function loadChar(i) {
   factionEl.style.color = accent === '#1a1a1a' ? '#a3a3a3' : accent;
   document.getElementById("char-traits").innerHTML = c.traits.map(t =>
     `<span class="trait-badge ${t.cls}" onclick="goToTrait(${t.idx})">${t.label}</span>`
-  ).join("");
+  ).join("") || '<span style="font-size:12px;color:#475569;">—</span>';
   
   document.getElementById("char-bg").textContent = c.bg;
   document.getElementById("char-motiv").textContent = c.motiv;
@@ -662,6 +733,7 @@ function loadChar(i) {
   
   drawRadar({ ...c, stats, accent });
   updateMmrBadge(c.name);
+  renderRecentGames(c.name);
 }
 
 function switchTab(tab, btn) {
@@ -756,6 +828,86 @@ const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';
 const MMR_UNCALIBRATED = 'Img/Uncalibrated.png';
 const ARCHIVE_FALLBACK_URL = './data/archive.json';
+
+const GAME_LOGOS = {
+  'Доминион': 'Img/dominion-logo.png',
+  'Судный день': 'Img/human-punishment-logo.png',
+  'Манчкин': 'Img/munchkin-logo.png',
+  'Накорми Кракена': 'Img/Feed-the-kraken-logo.png',
+  'Письма Призрака': 'Img/Pisma-prizraka-logo.png',
+  'Секретный Гитлер': 'Img/secret-hitler-logo.png'
+};
+
+function getGameLogo(gameName) {
+  if (GAME_LOGOS[gameName]) return GAME_LOGOS[gameName];
+  const key = (gameName || '').toLowerCase();
+  for (const [name, path] of Object.entries(GAME_LOGOS)) {
+    if (key.includes(name.toLowerCase().slice(0, 6))) return path;
+  }
+  return null;
+}
+
+function getPlayerRecentGames(playerName, limit = 5) {
+  if (!ARCHIVE?.sessions) return [];
+  return ARCHIVE.sessions
+    .filter(s => (s.roles || []).some(r => r.player === playerName))
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, limit)
+    .map(s => {
+      const entry = (s.roles || []).find(r => r.player === playerName);
+      return { game: s.game, won: !!entry?.won, date: s.date };
+    });
+}
+
+function renderRecentGames(playerName) {
+  const root = document.getElementById('char-recent-games');
+  if (!root) return;
+
+  const games = getPlayerRecentGames(playerName, 5);
+  const slots = [];
+
+  for (let i = 0; i < 5; i++) {
+    const g = games[i];
+    if (!g) {
+      slots.push(`
+        <div class="recent-game-item">
+          <div class="recent-game-icon empty"></div>
+          <div class="recent-game-status empty">—</div>
+        </div>
+      `);
+      continue;
+    }
+
+    const logo = getGameLogo(g.game);
+    const iconHtml = logo
+      ? `<img src="${logo}" alt="${g.game}" title="${g.game}">`
+      : `<span style="font-size:9px;color:#64748b;padding:4px;text-align:center;display:flex;align-items:center;justify-content:center;height:100%;">${g.game.split(' ')[0]}</span>`;
+
+    if (g.won) {
+      slots.push(`
+        <div class="recent-game-item">
+          <div class="recent-game-icon">${iconHtml}</div>
+          <div class="recent-game-status win">
+            <span class="tri">▲</span>
+            <span>Win</span>
+          </div>
+        </div>
+      `);
+    } else {
+      slots.push(`
+        <div class="recent-game-item">
+          <div class="recent-game-icon">${iconHtml}</div>
+          <div class="recent-game-status loss">
+            <span>Loss</span>
+            <span class="tri">▼</span>
+          </div>
+        </div>
+      `);
+    }
+  }
+
+  root.innerHTML = slots.join('');
+}
 
 const MMR_TIERS = [
   { min: 0,    prefix: 'recruit',  label: 'Recruit' },
@@ -963,9 +1115,9 @@ function getMmrLeaderboardRanks() {
 }
 
 function getMmrBadgeSrc(mmr, leaderboardRank) {
-  if (leaderboardRank === 1) return 'Img/mmr/Titan-Top1.png';
-  if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/mmr/Titan-Top.png';
-  if (mmr >= 4000) return 'Img/mmr/Titan-default.png';
+  if (leaderboardRank === 1) return 'Img/Titan-Top1.png';
+  if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/Titan-Top.png';
+  if (mmr >= 4000) return 'Img/Titan-default.png';
 
   let tierIdx = 0;
   for (let i = MMR_TIERS.length - 1; i >= 0; i--) {
@@ -979,7 +1131,7 @@ function getMmrBadgeSrc(mmr, leaderboardRank) {
   const file = tier.prefix === 'recruit'
     ? `recruit-${star}star.png`
     : `${tier.prefix}-${star}star.png`;
-  return `Img/mmr/${file}`;
+  return `Img/${file}`;
 }
 
 function updateMmrBadge(playerName) {
