@@ -22,7 +22,7 @@ a { color: #a78bfa; text-decoration: none; }
     padding: 10px 20px; display: flex; justify-content: space-between; align-items: center;
 }
 .header-left { display: flex; align-items: center; gap: 12px; }
-.logo-img { height: 34px; width: 34px; object-fit: cover; border-radius: 50%; border: 1px solid #2d2d4e; }
+.logo-img { height: 38px; width: 38px; object-fit: contain; border-radius: 50%; border: 1px solid #2d2d4e; background: transparent; }
 .stamp { font-size: 11px; color: #555; letter-spacing: 1.5px; text-transform: uppercase; }
 .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .sync-pill {
@@ -56,6 +56,46 @@ a { color: #a78bfa; text-decoration: none; }
 .win-card {
     background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px;
     padding: 16px 18px 14px; display: flex; flex-direction: column; gap: 4px;
+    position: relative;
+}
+.win-card.rank-gold {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(#0a0a14, #0a0a14) padding-box,
+        linear-gradient(120deg, #78350f, #fcd34d, #fef08a, #f59e0b, #fcd34d, #92400e) border-box;
+    background-size: 100% 100%, 220% 220%;
+    animation: shimmer-gold 3.5s ease-in-out infinite;
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.35), inset 0 0 12px rgba(250, 204, 21, 0.06);
+}
+.win-card.rank-silver {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(#0a0a14, #0a0a14) padding-box,
+        linear-gradient(120deg, #475569, #e2e8f0, #f8fafc, #94a3b8, #cbd5e1, #64748b) border-box;
+    background-size: 100% 100%, 220% 220%;
+    animation: shimmer-silver 3.5s ease-in-out infinite;
+    box-shadow: 0 0 14px rgba(203, 213, 225, 0.28), inset 0 0 10px rgba(226, 232, 240, 0.05);
+}
+.win-card.rank-bronze {
+    border: 2px solid transparent;
+    background:
+        linear-gradient(#0a0a14, #0a0a14) padding-box,
+        linear-gradient(120deg, #451a03, #d97706, #fdba74, #b45309, #f59e0b, #78350f) border-box;
+    background-size: 100% 100%, 220% 220%;
+    animation: shimmer-bronze 3.5s ease-in-out infinite;
+    box-shadow: 0 0 14px rgba(217, 119, 6, 0.3), inset 0 0 10px rgba(245, 158, 11, 0.05);
+}
+@keyframes shimmer-gold {
+    0%, 100% { background-position: 0 0, 0% 50%; }
+    50% { background-position: 0 0, 100% 50%; }
+}
+@keyframes shimmer-silver {
+    0%, 100% { background-position: 0 0, 0% 50%; }
+    50% { background-position: 0 0, 100% 50%; }
+}
+@keyframes shimmer-bronze {
+    0%, 100% { background-position: 0 0, 0% 50%; }
+    50% { background-position: 0 0, 100% 50%; }
 }
 .win-card .name { font-size: 15px; font-weight: 700; color: #f8fafc; }
 .win-card .pct { font-size: 32px; font-weight: 800; line-height: 1.1; }
@@ -114,7 +154,7 @@ a { color: #a78bfa; text-decoration: none; }
     padding: 14px 16px; margin-bottom: 10px;
 }
 .log-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
-.log-game { color: #a78bfa; font-weight: 700; font-size: 14px; }
+.log-game { font-weight: 700; font-size: 14px; }
 .log-meta { font-size: 12px; color: #64748b; margin-top: 4px; }
 .log-meta b { color: #94a3b8; font-weight: 600; }
 .log-actions { display: flex; gap: 6px; flex-shrink: 0; }
@@ -161,7 +201,7 @@ a { color: #a78bfa; text-decoration: none; }
 
 <div class="header-bar">
     <div class="header-left">
-        <img src="Логотип.jpg" class="logo-img" alt="Logo">
+        <img src="Img/logo.jpg" class="logo-img" alt="Logo">
         <div style="display:flex; flex-direction:column;">
             <span style="font-weight:700; font-size:14px; letter-spacing:0.5px;">О ИГРОВОМ АРХИВЕ</span>
             <span class="stamp">Статистика и логи</span>
@@ -330,7 +370,7 @@ const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';  // anon public
 
 // ⚠️ Укажите ТОТ ЖЕ email, что в supabase-auth-setup.sql и в Supabase → Authentication → Users
-const ADMIN_EMAIL = 'Medet.ns@gmail.com';
+const ADMIN_EMAIL = 'YOUR_EMAIL@example.com';
 
 let supabaseClient = null;
 let authSession = null;
@@ -663,30 +703,93 @@ function gamesLabel(n) {
     return `${n} партий`;
 }
 
+/** Цвет названия игры в архиве */
+function getGameColor(gameName) {
+    const key = (gameName || '').toLowerCase().trim();
+    if (key.includes('письма') && key.includes('призрак')) return '#1e40af';
+    if (key.includes('кракен')) return '#eab308';
+    if (key.includes('судный')) return '#a78bfa';
+    if (key.includes('гитлер')) return '#ef4444';
+    if (key.includes('доминион')) return '#f8fafc';
+    if (key.includes('манчкин')) return '#94a3b8';
+    return '#a78bfa';
+}
+
+const WINRATE_RANK_MIN_GAMES = 10;
+
+function buildWinrateStats() {
+    const counts = {};
+    STATE.players.forEach(p => { counts[p] = { w: 0, l: 0, t: 0, lastWin: null }; });
+
+    STATE.sessions.forEach(s => {
+        const sessionDate = s.date ? new Date(s.date) : null;
+        const sessionTime = sessionDate && !isNaN(sessionDate) ? sessionDate.getTime() : null;
+        (s.roles || []).forEach(r => {
+            if (!counts[r.player]) return;
+            counts[r.player].t++;
+            if (r.won) {
+                counts[r.player].w++;
+                if (sessionTime !== null && (!counts[r.player].lastWin || sessionTime > counts[r.player].lastWin)) {
+                    counts[r.player].lastWin = sessionTime;
+                }
+            } else {
+                counts[r.player].l++;
+            }
+        });
+    });
+
+    return counts;
+}
+
+function compareWinratePlayers(a, b) {
+    if (b.pct !== a.pct) return b.pct - a.pct;
+    if (b.t !== a.t) return b.t - a.t;
+    return (b.lastWin ?? -Infinity) - (a.lastWin ?? -Infinity);
+}
+
+function getWinrateRankMap(counts) {
+    const eligible = STATE.players
+        .map(name => {
+            const c = counts[name];
+            const pct = c.t ? Math.round((c.w / c.t) * 100) : 0;
+            return { name, w: c.w, l: c.l, t: c.t, pct, lastWin: c.lastWin };
+        })
+        .filter(p => p.t >= WINRATE_RANK_MIN_GAMES)
+        .sort(compareWinratePlayers);
+
+    const rankMap = new Map();
+    const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
+    let slot = 0;
+
+    for (let i = 0; i < eligible.length && slot < 3; i++) {
+        if (i > 0 && compareWinratePlayers(eligible[i - 1], eligible[i]) === 0) {
+            rankMap.set(eligible[i].name, rankMap.get(eligible[i - 1].name));
+        } else {
+            rankMap.set(eligible[i].name, rankClasses[slot]);
+            slot++;
+        }
+    }
+
+    return rankMap;
+}
+
 // ── 1. Общий винрейт (карточки как на макете) ──
 function renderWinrate() {
     const root = document.getElementById('winrate-output');
     document.getElementById('total-games-label').textContent = gamesLabel(partyCount());
 
-    const counts = {};
-    STATE.players.forEach(p => { counts[p] = { w: 0, l: 0, t: 0 }; });
-
-    STATE.sessions.forEach(s => {
-        (s.roles || []).forEach(r => {
-            if (!counts[r.player]) return;
-            counts[r.player].t++;
-            if (r.won) counts[r.player].w++; else counts[r.player].l++;
-        });
-    });
+    const counts = buildWinrateStats();
+    const rankMap = getWinrateRankMap(counts);
 
     root.innerHTML = '';
     STATE.players.forEach(name => {
         const c = counts[name];
         const pct = c.t ? Math.round((c.w / c.t) * 100) : 0;
         const color = winratePctColor(pct);
+        const rankClass = rankMap.get(name) || '';
 
         const card = document.createElement('div');
-        card.className = 'win-card';
+        card.className = 'win-card' + (rankClass ? ` ${rankClass}` : '');
         card.innerHTML = `
             <div class="name">${name}</div>
             <div class="pct" style="color:${color}">${pct}%</div>
@@ -956,12 +1059,13 @@ function renderArchive() {
                         <button class="icon-btn danger" title="Удалить" onclick="deleteSession(${s.id})">×</button>
                     </div>` : '';
 
+            const gameColor = getGameColor(s.game);
             const card = document.createElement('div');
             card.className = 'log-card';
             card.innerHTML = `
                 <div class="log-top">
                     <div>
-                        <div class="log-game">${s.game}</div>
+                        <div class="log-game" style="color:${gameColor}">${s.game}</div>
                         <div class="log-meta">Формат: <b>${modeLabel}</b> · Участники: <b>${participants || '—'}</b></div>
                     </div>
                     ${adminActions}
