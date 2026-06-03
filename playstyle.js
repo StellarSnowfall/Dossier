@@ -18,27 +18,33 @@
 
   const FACTION_KEYS = ['ambition', 'order', 'spectacle', 'chaosJoy'];
 
+  // Позитивные: только +; Смешанные: + и −; Негативные: только −
   const NOMINATION_CATEGORIES = [
-    { id: 'spectacle', label: 'Великолепная игра', factions: { spectacle: 4 }, stats: { 'Интрига': 0.12, 'Орешки': 0.06 } },
-    { id: 'strategy', label: 'Гениальная стратегия', factions: { order: 2, ambition: 2 }, stats: { 'Скилл': 0.14 } },
-    { id: 'chaos', label: 'Снова творил хаос', factions: { chaosJoy: 5 }, stats: { 'Орешки': 0.08, 'Интрига': 0.06 } },
-    { id: 'ambition', label: 'Жажда победы', factions: { ambition: 5 }, stats: { 'Убеждение': 0.1, 'Орешки': 0.08 } },
-    { id: 'table', label: 'Держал стол', factions: { order: 5 }, stats: { 'Адекватность': 0.14, 'Стойкость': 0.06 } },
-    { id: 'clutch', label: 'Ва-банк / на кону', factions: { ambition: 2 }, stats: { 'Орешки': 0.16 } },
-    { id: 'diplomacy', label: 'Сильная дипломатия', factions: { order: 2, ambition: 1 }, stats: { 'Убеждение': 0.14 } },
-    { id: 'endurance', label: 'Собран до конца', factions: { order: 3 }, stats: { 'Стойкость': 0.14 } },
-    { id: 'mentor', label: 'Помог / объяснял', factions: { order: 4 }, stats: { 'Адекватность': 0.14 } },
-    { id: 'mindgames', label: 'Игра в голове', factions: { spectacle: 3 }, stats: { 'Интрига': 0.12, 'Скилл': 0.06 } },
-    { id: 'betrayal', label: 'Красивое предательство', factions: { spectacle: 4, ambition: 1 }, stats: { 'Интрига': 0.14 } },
-    { id: 'pressure', label: 'Давил без срыва', factions: { ambition: 3 }, stats: { 'Стойкость': 0.1, 'Убеждение': 0.08 } },
-    { id: 'wildcard', label: 'Неожиданный ход', factions: { chaosJoy: 3, spectacle: 1 }, stats: { 'Интрига': 0.08, 'Скилл': 0.08 } },
-    { id: 'comedian', label: 'Разрядил обстановку', factions: { chaosJoy: 4 }, stats: { 'Адекватность': 0.1 } },
-    { id: 'carry', label: 'Потащил команду', factions: { ambition: 4 }, stats: { 'Скилл': 0.1, 'Стойкость': 0.08 } },
-    { id: 'fallen', label: 'Эпично погиб', factions: { spectacle: 2, chaosJoy: 2 }, stats: { 'Орешки': 0.12 } },
-    { id: 'fairplay', label: 'Честная игра', factions: { order: 4 }, stats: { 'Адекватность': 0.12 } },
-    { id: 'slowburn', label: 'Долгий план сработал', factions: { order: 2, spectacle: 2 }, stats: { 'Интрига': 0.1, 'Скилл': 0.08 } },
-    { id: 'storm', label: 'Шатал стол', factions: { spectacle: 3, chaosJoy: 2 }, stats: { 'Интрига': 0.1, 'Орешки': 0.06 } },
-    { id: 'zen', label: 'Пофиг на счёт', factions: { chaosJoy: 5 }, stats: { 'Адекватность': 0.06 } }
+    // --- позитивные ---
+    { id: 'clutch',     label: 'Клатч',              factions: { ambition: 4 },             stats: { 'Скилл': 0.12, 'Стойкость': 0.08 } },
+    { id: 'spectacle',  label: 'Великолепная игра',  factions: { spectacle: 4 },            stats: { 'Интрига': 0.10, 'Убеждение': 0.10 } },
+    { id: 'mvp',        label: 'МВП',                factions: { ambition: 3, order: 2 },   stats: { 'Скилл': 0.12, 'Адекватность': 0.08 } },
+    { id: 'genius',     label: 'Гениальный Мув',     factions: { spectacle: 3, ambition: 1 }, stats: { 'Интрига': 0.14, 'Скилл': 0.06 } },
+    { id: 'domination', label: 'Доминирование',      factions: { ambition: 4 },             stats: { 'Орешки': 0.12, 'Скилл': 0.08 } },
+    { id: 'bluff',      label: 'Блефмастер',         factions: { spectacle: 3, chaosJoy: 1 }, stats: { 'Убеждение': 0.12, 'Интрига': 0.08 } },
+    { id: 'endurance',  label: 'Собран',             factions: { order: 4 },                stats: { 'Стойкость': 0.14, 'Адекватность': 0.06 } },
+    // --- смешанные ---
+    { id: 'betrayal',   label: 'Предательство',      factions: { spectacle: 3, chaosJoy: 2 }, stats: { 'Интрига': 0.14, 'Адекватность': -0.06 } },
+    { id: 'aggressor',  label: 'Агрессор',           factions: { ambition: 2, chaosJoy: 2 }, stats: { 'Орешки': 0.12, 'Адекватность': -0.08 } },
+    // --- негативные ---
+    { id: 'unluck',     label: 'Анлак',              factions: { chaosJoy: 3 },             stats: { 'Орешки': -0.12, 'Стойкость': -0.08 } },
+    { id: 'throw',      label: 'Слив',               factions: {},                          stats: { 'Орешки': -0.10, 'Скилл': -0.10 } },
+    { id: 'noob',       label: 'Нубятина',           factions: {},                          stats: { 'Скилл': -0.14, 'Адекватность': -0.06 } },
+    { id: 'panic',      label: 'Паника',             factions: { chaosJoy: 3 },             stats: { 'Стойкость': -0.12, 'Адекватность': -0.08 } },
+  ];
+
+  const GAME_TAGS = [
+    { id: 'uneven',   label: 'Неравный Баланс', color: '#f97316' },
+    { id: 'sweat',    label: 'Потная Катка',    color: '#3b82f6' },
+    { id: 'ruin',     label: 'Много Руины',     color: '#a855f7' },
+    { id: 'easy',     label: 'Лёгкая Победа',  color: '#22c55e' },
+    { id: 'comeback', label: 'Камбэк',          color: '#14b8a6' },
+    { id: 'chaos',    label: 'Полный Хаос',     color: '#dc2626' },
   ];
 
   const FACTION_LABELS = {
@@ -119,8 +125,11 @@
     return session.nomination;
   }
 
-  function votesRequired(participantCount) {
-    return Math.ceil(participantCount / 2);
+  function votesRequired(n) {
+    if (n <= 3) return 0;   // голосование не проводится
+    if (n <= 6) return 3;
+    if (n <= 8) return 4;
+    return 5;               // 9–10+
   }
 
   function aggregateConfirmed(ballots, participantCount) {
@@ -130,6 +139,7 @@
     ballots.forEach(b => {
       (b.tokens || []).forEach(t => {
         if (!t?.player || !t?.category) return;
+        if (t.player === '__tag') return; // теги катки — отдельная агрегация
         const key = `${t.player}\0${t.category}`;
         if (!counts.has(key)) counts.set(key, new Set());
         counts.get(key).add(b.voter);
@@ -154,6 +164,23 @@
     return confirmed.sort((a, b) => b.votes - a.votes || a.player.localeCompare(b.player, 'ru'));
   }
 
+  function resolveGameTag(ballots) {
+    const counts = {};
+    ballots.forEach(b => {
+      (b.tokens || []).forEach(t => {
+        if (t?.player === '__tag' && t?.category) {
+          counts[t.category] = (counts[t.category] || 0) + 1;
+        }
+      });
+    });
+    const entries = Object.entries(counts);
+    if (!entries.length) return null;
+    const max = Math.max(...entries.map(([, v]) => v));
+    const winner = entries.find(([, v]) => v === max);
+    const tag = winner && GAME_TAGS.find(g => g.id === winner[0]);
+    return tag ? { ...tag, votes: max } : null;
+  }
+
   function capStatDeltas(deltas) {
     const cap = PLAYSTYLE_CONFIG.statStepCap;
     const out = {};
@@ -173,6 +200,7 @@
     ensurePlaystyleState(state);
     const byPlayer = {};
     confirmed.forEach(c => {
+      if (c._type === 'gametag') return; // пропускаем тег катки
       if (!byPlayer[c.player]) byPlayer[c.player] = {};
       const cat = getCategoryById(c.category);
       if (!cat) return;
@@ -359,10 +387,13 @@
       const s = state.sessions.find(x => x.id === row.session_id);
       if (!s) return;
       if (!s.nomination) s.nomination = { status: 'closed', confirmed: [] };
+      const playerConfirmed = (row.confirmed || []).filter(c => c._type !== 'gametag');
+      const gameTag = (row.confirmed || []).find(c => c._type === 'gametag') || null;
       if (s.nomination.status === 'closed' &&
-          JSON.stringify(s.nomination.confirmed) === JSON.stringify(row.confirmed)) return;
+          JSON.stringify(s.nomination.confirmed) === JSON.stringify(playerConfirmed)) return;
       s.nomination.status = 'closed';
-      s.nomination.confirmed = row.confirmed || [];
+      s.nomination.confirmed = playerConfirmed;
+      s.nomination.gameTag = gameTag;
       s.nomination.closedAt = row.closed_at;
       changed = true;
     });
@@ -403,10 +434,13 @@
     }
 
     const confirmed = aggregateConfirmed(ballots, participants.length);
-    await insertNominationClose(supabaseUrl, key, sessionId, confirmed);
+    const gameTag = resolveGameTag(ballots);
+    const confirmedForDb = gameTag ? [...confirmed, { _type: 'gametag', ...gameTag }] : confirmed;
+    await insertNominationClose(supabaseUrl, key, sessionId, confirmedForDb);
 
     session.nomination.status = 'closed';
     session.nomination.confirmed = confirmed;
+    session.nomination.gameTag = gameTag || null;
     session.nomination.ballotCount = ballots.length;
     session.nomination.closedAt = new Date().toISOString();
 
@@ -437,8 +471,10 @@
     STAT_NAMES,
     PLAYSTYLE_CONFIG,
     NOMINATION_CATEGORIES,
+    GAME_TAGS,
     FACTION_LABELS,
     getCategoryById,
+    resolveGameTag,
     roundStat,
     clampStat,
     randomToken,
