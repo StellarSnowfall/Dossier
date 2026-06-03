@@ -2187,6 +2187,7 @@ async function submitVoteModal() {
     if (gameTagVote) tokens.push({ player: '__tag', category: gameTagVote });
 
     for (const t of tokens) {
+        if (t.player === '__tag') continue;
         if (!participants.includes(t.player)) return showVoteError(`«${t.player}» не участвовал в партии.`);
     }
 
