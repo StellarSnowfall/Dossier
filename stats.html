@@ -848,12 +848,42 @@ function showPage() {
     document.getElementById('page-content').classList.remove('hidden');
 }
 
-async function refreshAllSafe() {
-    try {
-        await refreshAll();
-    } catch (e) {
-        console.warn('refreshAll:', e);
+function refreshAllCore() {
+    ensureMmrState();
+    recalculateMmr();
+    if (typeof Playstyle !== 'undefined') {
+        Playstyle.recalculatePlaystyle(STATE, STATE.players);
     }
+    populateFilters();
+    renderWinrate();
+    renderMmrLeaderboard();
+    renderGamePills();
+    renderRoleMatrix();
+    renderArchive();
+}
+
+function scheduleDeferredNominationSync() {
+    if (STORAGE !== 'supabase' || typeof Playstyle === 'undefined') return;
+    setTimeout(async () => {
+        try {
+            await Playstyle.mergeNominationClosesFromDb(SUPABASE_URL, SUPABASE_KEY, STATE);
+            await Playstyle.syncBallotCounts(SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players);
+            Playstyle.recalculatePlaystyle(STATE, STATE.players);
+            renderArchive();
+            try { writeCache(STATE); } catch (e) { console.warn('cache', e); }
+        } catch (e) {
+            console.warn('Nomination sync:', e);
+        }
+    }, 80);
+}
+
+function fetchRemoteWithTimeout(force, ms = 20000) {
+    return Promise.race([
+        fetchRemote(force),
+        new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Таймаут загрузки архива (20 с). Проверьте Supabase и сеть.')), ms);
+        })
+    ]);
 }
 
 async function loadCloudData(force = false) {
@@ -865,18 +895,20 @@ async function loadCloudData(force = false) {
         showPage();
         updateAdminUI();
         setSyncStatus(true, 'Кэш · обновление…');
-        refreshAllSafe().then(() => setSyncStatus(true, 'Кэш · общий архив'));
+        try { refreshAllCore(); } catch (e) { console.warn(e); }
+        scheduleDeferredNominationSync();
     }
 
     try {
-        const fresh = await fetchRemote(force);
+        const fresh = await fetchRemoteWithTimeout(force, 20000);
         STATE = fresh;
-        writeCache(fresh);
+        try { writeCache(fresh); } catch (e) { console.warn('Не удалось записать кэш (слишком большой архив?)', e); }
         showPage();
         updateAdminUI();
         const labels = { jsonbin: 'JSONBin', supabase: 'Supabase', github: 'GitHub' };
         setSyncStatus(true, isAdmin() ? `${labels[STORAGE] || 'Онлайн'} · админ` : (labels[STORAGE] || 'Онлайн'));
-        await refreshAllSafe();
+        try { refreshAllCore(); } catch (e) { console.warn(e); }
+        scheduleDeferredNominationSync();
     } catch (e) {
         if (cached) {
             setSyncStatus(false, 'Офлайн · кэш');
@@ -884,10 +916,20 @@ async function loadCloudData(force = false) {
             return;
         }
         setSyncStatus(false, 'Нет связи');
-        const msg = e.name === 'AbortError' ? 'Таймаут загрузки Supabase (архив большой или сеть)' : e.message;
-        loader.textContent = `Не удалось загрузить архив: ${msg}`;
+        loader.classList.remove('hidden');
+        document.getElementById('page-content').classList.add('hidden');
+        let hint = e.message || String(e);
+        if (typeof Playstyle === 'undefined') {
+            hint += ' · не найден playstyle.js на сервере';
+        }
+        loader.innerHTML = `Не удалось загрузить архив.<br><span style="font-size:12px;color:#94a3b8;margin-top:8px;display:inline-block">${hint}</span><br><button type="button" class="nav-btn" style="margin-top:14px" onclick="forceRefresh()">Повторить ↻</button>`;
         console.error(e);
     }
+}
+
+async function refreshAll() {
+    refreshAllCore();
+    scheduleDeferredNominationSync();
 }
 
 function forceRefresh() {
@@ -903,28 +945,6 @@ async function pushToCloud() {
     requireAdmin();
     await saveRemote();
     setSyncStatus(true, isAdmin() ? 'Сохранено · админ' : 'Supabase');
-}
-
-async function refreshAll() {
-    ensureMmrState();
-    recalculateMmr();
-    if (STORAGE === 'supabase' && typeof Playstyle !== 'undefined') {
-        try {
-            await Playstyle.mergeNominationClosesFromDb(SUPABASE_URL, SUPABASE_KEY, STATE);
-            await Playstyle.syncBallotCounts(SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players);
-        } catch (e) {
-            console.warn('Nomination sync:', e);
-        }
-        Playstyle.recalculatePlaystyle(STATE, STATE.players);
-    } else if (typeof Playstyle !== 'undefined') {
-        Playstyle.recalculatePlaystyle(STATE, STATE.players);
-    }
-    populateFilters();
-    renderWinrate();
-    renderMmrLeaderboard();
-    renderGamePills();
-    renderRoleMatrix();
-    renderArchive();
 }
 
 function partyCount() {
