@@ -209,6 +209,26 @@ a { color: #a78bfa; text-decoration: none; }
 .log-mmr { font-size: 11px; color: #64748b; font-family: monospace; margin-top: 8px; }
 .log-mmr .up { color: #4ade80; }
 .log-mmr .down { color: #fb7185; }
+.log-nomination { margin-top: 10px; padding-top: 10px; border-top: 1px solid #1e293b; }
+.nomination-status { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
+.nomination-status.open { color: #c4b5fd; }
+.nomination-status.closed { color: #86efac; }
+.nomination-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.nomination-badge {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px;
+    background: rgba(124,58,237,0.15); border: 1px solid #4c1d95; color: #e9d5ff;
+}
+.nomination-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.vote-token-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.vote-token-row input { flex: 1; min-width: 180px; font-size: 11px; font-family: monospace; }
+.token-slot {
+    background: #0a0a14; border: 1px solid #2d2d4e; border-radius: 10px;
+    padding: 12px; margin-bottom: 10px;
+}
+.token-slot label.stamp { display: block; margin-bottom: 8px; color: #a78bfa; }
+.token-slot.optional label.stamp::after { content: ' · необязательно'; color: #64748b; font-weight: normal; }
+.vote-hint { font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 14px; }
+.vote-success { color: #86efac; font-size: 13px; margin-top: 10px; }
 
 /* ── Modal ── */
 .modal-overlay {
@@ -419,6 +439,42 @@ a { color: #a78bfa; text-decoration: none; }
     </div>
 </div>
 
+<!-- Modal: peer nomination vote -->
+<div id="vote-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeVoteModal()">
+    <div class="modal" style="max-width:520px;">
+        <h3 id="vote-modal-title">Жетоны стола</h3>
+        <p class="vote-hint" id="vote-modal-hint"></p>
+        <div class="field">
+            <label class="stamp">Вы — кто голосует?</label>
+            <select id="vote-voter" class="form-select" style="width:100%"></select>
+        </div>
+        <div class="token-slot">
+            <label class="stamp">Жетон 1</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <select id="vote-p1" class="form-select" style="flex:1;min-width:120px;"></select>
+                <select id="vote-c1" class="form-select" style="flex:1.2;min-width:140px;"></select>
+            </div>
+        </div>
+        <div class="token-slot optional">
+            <label class="stamp">Жетон 2</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <select id="vote-p2" class="form-select" style="flex:1;min-width:120px;">
+                    <option value="">— не отдавать —</option>
+                </select>
+                <select id="vote-c2" class="form-select" style="flex:1.2;min-width:140px;">
+                    <option value="">—</option>
+                </select>
+            </div>
+        </div>
+        <p id="vote-error" style="font-size:12px;color:#fb7185;display:none;margin-bottom:8px;"></p>
+        <p id="vote-success" class="vote-success" style="display:none;"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn-action secondary" onclick="closeVoteModal()">Закрыть</button>
+            <button type="button" class="btn-action" id="vote-submit-btn" onclick="submitVoteModal()">Отправить</button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal: settings (games + players) -->
 <div id="settings-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeSettingsModal()">
     <div class="modal">
@@ -439,6 +495,7 @@ a { color: #a78bfa; text-decoration: none; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="playstyle.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
 // ХРАНИЛИЩЕ — выберите один backend (см. комментарии ниже)
@@ -465,7 +522,7 @@ const GITHUB_DATA_URL = './data/archive.json';
 
 // Не дергать JSONBin чаще чем раз в N минут (кнопка ↻ обновляет принудительно)
 const CACHE_MINUTES = 60;
-const CACHE_KEY = 'dossier_archive_v3';
+const CACHE_KEY = 'dossier_archive_v4';
 
 const DEFAULT_STATE = {
     players: [
@@ -503,7 +560,8 @@ const DEFAULT_STATE = {
         kFactor: 32,
         kCalibration: 64,
         ratings: {}
-    }
+    },
+    playstyle: { version: 1, players: {} }
 };
 
 let STATE = structuredClone(DEFAULT_STATE);
@@ -522,6 +580,7 @@ function normalizeLoaded(raw) {
         const state = { ...structuredClone(DEFAULT_STATE), sessions: raw };
         mergeGamesMmrType(state.games);
         ensureMmrState(state);
+        Playstyle.ensurePlaystyleState(state);
         return state;
     }
     if (raw && Array.isArray(raw.sessions)) {
@@ -533,10 +592,16 @@ function normalizeLoaded(raw) {
                 ...structuredClone(DEFAULT_STATE.mmr),
                 ...(raw.mmr || {}),
                 ratings: { ...(raw.mmr?.ratings || {}) }
+            },
+            playstyle: {
+                ...structuredClone(DEFAULT_STATE.playstyle),
+                ...(raw.playstyle || {}),
+                players: { ...(raw.playstyle?.players || {}) }
             }
         };
         mergeGamesMmrType(state.games);
         ensureMmrState(state);
+        Playstyle.ensurePlaystyleState(state);
         return state;
     }
     return structuredClone(DEFAULT_STATE);
@@ -776,7 +841,7 @@ async function loadCloudData(force = false) {
     if (cached) {
         STATE = cached;
         showPage();
-        refreshAll();
+        await refreshAll();
         updateAdminUI();
         setSyncStatus(true, 'Кэш · общий архив');
     }
@@ -786,7 +851,7 @@ async function loadCloudData(force = false) {
         STATE = fresh;
         writeCache(fresh);
         showPage();
-        refreshAll();
+        await refreshAll();
         updateAdminUI();
         const labels = { jsonbin: 'JSONBin', supabase: 'Supabase', github: 'GitHub' };
         setSyncStatus(true, isAdmin() ? `${labels[STORAGE] || 'Онлайн'} · админ` : (labels[STORAGE] || 'Онлайн'));
@@ -818,9 +883,14 @@ async function pushToCloud() {
     setSyncStatus(true, isAdmin() ? 'Сохранено · админ' : 'Supabase');
 }
 
-function refreshAll() {
+async function refreshAll() {
     ensureMmrState();
     recalculateMmr();
+    if (STORAGE === 'supabase') {
+        await Playstyle.mergeNominationClosesFromDb(SUPABASE_URL, SUPABASE_KEY, STATE);
+        await Playstyle.syncBallotCounts(SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players);
+    }
+    Playstyle.recalculatePlaystyle(STATE, STATE.players);
     populateFilters();
     renderWinrate();
     renderMmrLeaderboard();
@@ -914,7 +984,7 @@ function getWinrateRankMap(counts) {
 // MMR / Elo
 // ═══════════════════════════════════════════════════════════════════════════
 
-const MMR_TIERS = [
+const MMR_UNCALIBRATED = 'Img/mmr/Uncalibrated.png';
     { min: 0,    prefix: 'recruit',  label: 'Recruit' },
     { min: 1000, prefix: 'Guardian', label: 'Guardian' },
     { min: 1500, prefix: 'Crusader', label: 'Crusader' },
@@ -1190,7 +1260,7 @@ function renderMmrLeaderboard() {
         if (badgeSrc) {
             badgeHtml = `<img class="mmr-badge" src="${badgeSrc}" alt="" onerror="this.style.display='none'">`;
         } else {
-            badgeHtml = `<div class="mmr-badge placeholder">?</div>`;
+            badgeHtml = `<img class="mmr-badge" src="${MMR_UNCALIBRATED}" alt="Калибровка">`;
         }
 
         let valueHtml;
@@ -1301,7 +1371,7 @@ async function saveMmrAdmin() {
     try {
         await pushToCloud();
         closeMmrAdminModal();
-        refreshAll();
+        await refreshAll();
         alert('Настройки MMR сохранены.');
     } catch (e) {
         alert(`Ошибка: ${e.message}`);
@@ -1599,6 +1669,7 @@ function renderArchive() {
                 : (s.mmr?.eligible === false ? '<div class="log-mmr">MMR: не учитывается (до старта рейтинга)</div>' : '');
 
             const gameColor = getGameColor(s.game);
+            const nomHtml = renderNominationBlock(s);
             const card = document.createElement('div');
             card.className = 'log-card';
             card.innerHTML = `
@@ -1611,6 +1682,7 @@ function renderArchive() {
                 </div>
                 <div class="log-roles">${rolesHtml}</div>
                 ${mmrLine}
+                ${nomHtml}
                 ${s.notes ? `<div class="log-notes">${s.notes}</div>` : ''}
             `;
             root.appendChild(card);
@@ -1787,7 +1859,16 @@ async function saveSession() {
         });
     });
 
-    const session = { id: editingSessionId || Date.now(), date, game, mode, notes, roles };
+    const sessionId = editingSessionId || Date.now();
+    const prev = editingSessionId ? STATE.sessions.find(s => s.id === editingSessionId) : null;
+    const session = { id: sessionId, date, game, mode, notes, roles };
+
+    if (prev?.nomination?.status === 'closed') {
+        session.nomination = { ...prev.nomination };
+    } else {
+        Playstyle.ensureSessionNomination(session, STATE.players);
+        if (prev?.nomination?.token) session.nomination.token = prev.nomination.token;
+    }
 
     if (editingSessionId) {
         const i = STATE.sessions.findIndex(s => s.id === editingSessionId);
@@ -1797,11 +1878,12 @@ async function saveSession() {
     }
 
     recalculateMmr();
+    Playstyle.recalculatePlaystyle(STATE, STATE.players);
 
     try {
         await pushToCloud();
         closeSessionModal();
-        refreshAll();
+        await refreshAll();
     } catch (e) {
         alert(`Ошибка сохранения: ${e.message}`);
         await loadCloudData(true);
@@ -1811,11 +1893,19 @@ async function saveSession() {
 async function deleteSession(id) {
     try { requireAdmin(); } catch { return; }
     if (!confirm('Удалить эту партию из архива?')) return;
+    if (STORAGE === 'supabase') {
+        try {
+            await Playstyle.deleteNominationDataForSession(
+                SUPABASE_URL, SUPABASE_KEY, id, authSession?.access_token
+            );
+        } catch (e) { console.warn(e); }
+    }
     STATE.sessions = STATE.sessions.filter(s => s.id !== id);
     recalculateMmr();
+    Playstyle.recalculatePlaystyle(STATE, STATE.players);
     try {
         await pushToCloud();
-        refreshAll();
+        await refreshAll();
     } catch (e) {
         alert(`Ошибка: ${e.message}`);
         await loadCloudData(true);
@@ -1863,16 +1953,249 @@ async function saveSettings() {
     try {
         await pushToCloud();
         closeSettingsModal();
-        refreshAll();
+        await refreshAll();
         alert('Настройки сохранены.');
     } catch (e) {
         alert(`Ошибка: ${e.message}`);
     }
 }
 
+function renderNominationBlock(s) {
+    if (!s.nomination) return '';
+    const n = s.nomination;
+    const parts = Playstyle.getSessionParticipants(s, STATE.players);
+    const total = n.participantCount || parts.length;
+    const voted = n.ballotCount ?? 0;
+    const isOpen = n.status === 'open';
+    const req = Playstyle.votesRequired(total);
+
+    let statusText = isOpen
+        ? `Голосование: ${voted}/${total} · для утверждения номинации — ${req} жетона`
+        : 'Голосование закрыто';
+    if (isOpen && voted >= total) statusText += ' · все проголосовали';
+
+    let html = `<div class="log-nomination">
+        <div class="nomination-status ${isOpen ? 'open' : 'closed'}">${statusText}</div>`;
+
+    if (n.confirmed?.length) {
+        html += '<div class="nomination-badges">' + n.confirmed.map(c =>
+            `<span class="nomination-badge" title="${c.votes} из ${total} участников">${escapeHtml(c.player)}: ${escapeHtml(c.label)}</span>`
+        ).join('') + '</div>';
+    }
+
+    html += '<div class="nomination-actions">';
+    if (isOpen) {
+        html += `<button type="button" class="nav-btn" onclick="openVoteModal(${s.id})">Проголосовать</button>`;
+        html += `<button type="button" class="nav-btn" onclick="copyVoteLink(${s.id})">Ссылка</button>`;
+        if (isAdmin()) {
+            html += `<button type="button" class="nav-btn" onclick="adminCloseNomination(${s.id})">Закрыть</button>`;
+        }
+    }
+    html += '</div></div>';
+    return html;
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+let voteContext = { sessionId: null, token: null };
+
+function fillVoteCategorySelect(sel, includeEmpty) {
+    const cats = Playstyle.NOMINATION_CATEGORIES;
+    sel.innerHTML = (includeEmpty ? '<option value="">—</option>' : '') +
+        cats.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+}
+
+function openVoteModal(sessionId, tokenFromUrl) {
+    const s = STATE.sessions.find(x => x.id === sessionId);
+    if (!s?.nomination) {
+        alert('У этой партии нет голосования (старая запись).');
+        return;
+    }
+    if (s.nomination.status !== 'open') {
+        alert('Голосование по этой партии уже закрыто.');
+        return;
+    }
+
+    voteContext = {
+        sessionId,
+        token: tokenFromUrl || s.nomination.token
+    };
+
+    const participants = Playstyle.getSessionParticipants(s, STATE.players);
+    const voterSel = document.getElementById('vote-voter');
+    voterSel.innerHTML = '<option value="">— выберите себя —</option>' +
+        participants.map(p => `<option value="${p}">${p}</option>`).join('');
+
+    const pOpts = '<option value="">— игрок —</option>' +
+        participants.map(p => `<option value="${p}">${p}</option>`).join('');
+    document.getElementById('vote-p1').innerHTML = pOpts;
+    document.getElementById('vote-p2').innerHTML =
+        '<option value="">— не отдавать —</option>' +
+        participants.map(p => `<option value="${p}">${p}</option>`).join('');
+
+    fillVoteCategorySelect(document.getElementById('vote-c1'), false);
+    fillVoteCategorySelect(document.getElementById('vote-c2'), true);
+
+    document.getElementById('vote-modal-title').textContent = `Жетоны · ${s.game}`;
+    document.getElementById('vote-modal-hint').textContent =
+        `Раздайте 1–2 жетона другим участникам (не себе). Номинация утверждается, если ${Playstyle.votesRequired(participants.length)}+ игроков дали тот же жетон одному человеку. Шаг характеристик на радаре — до ${Playstyle.PLAYSTYLE_CONFIG.statStepCap}.`;
+
+    document.getElementById('vote-error').style.display = 'none';
+    document.getElementById('vote-success').style.display = 'none';
+    document.getElementById('vote-submit-btn').disabled = false;
+    document.getElementById('vote-modal').classList.remove('hidden');
+}
+
+function closeVoteModal() {
+    document.getElementById('vote-modal').classList.add('hidden');
+    voteContext = { sessionId: null, token: null };
+    if (location.search.includes('vote=')) {
+        const u = new URL(location.href);
+        u.searchParams.delete('vote');
+        u.searchParams.delete('t');
+        history.replaceState({}, '', u.pathname + u.search);
+    }
+}
+
+function showVoteError(msg) {
+    const el = document.getElementById('vote-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.getElementById('vote-success').style.display = 'none';
+}
+
+async function copyVoteLink(sessionId) {
+    const s = STATE.sessions.find(x => x.id === sessionId);
+    if (!s?.nomination?.token) return alert('Нет токена голосования.');
+    const path = location.pathname.split('/').pop() || 'gemini-code-1780045779252.html';
+    const rel = Playstyle.getVoteUrl(s, path);
+    const url = new URL(rel, location.href).href;
+    try {
+        await navigator.clipboard.writeText(url);
+        alert('Ссылка скопирована — отправьте в чат участникам.');
+    } catch {
+        prompt('Скопируйте ссылку:', url);
+    }
+}
+
+async function submitVoteModal() {
+    const voter = document.getElementById('vote-voter').value;
+    const p1 = document.getElementById('vote-p1').value;
+    const c1 = document.getElementById('vote-c1').value;
+    const p2 = document.getElementById('vote-p2').value;
+    const c2 = document.getElementById('vote-c2').value;
+
+    const session = STATE.sessions.find(s => s.id === voteContext.sessionId);
+    if (!session) return showVoteError('Партия не найдена.');
+    const participants = Playstyle.getSessionParticipants(session, STATE.players);
+
+    if (!voter) return showVoteError('Выберите своё имя.');
+    if (!participants.includes(voter)) return showVoteError('Вы не в списке участников.');
+    if (!p1 || !c1) return showVoteError('Заполните хотя бы первый жетон.');
+    if (p1 === voter || p2 === voter) return showVoteError('Нельзя номинировать себя.');
+    if (p2 && !c2) return showVoteError('Для второго жетона выберите категорию.');
+    if (c2 && !p2) return showVoteError('Для второго жетона выберите игрока.');
+    if (p2 && c2 && p1 === p2 && c1 === c2) return showVoteError('Два жетона должны отличаться.');
+
+    const tokens = [{ player: p1, category: c1 }];
+    if (p2 && c2) tokens.push({ player: p2, category: c2 });
+
+    for (const t of tokens) {
+        if (!participants.includes(t.player)) return showVoteError(`«${t.player}» не участвовал в партии.`);
+    }
+
+    if (STORAGE !== 'supabase') {
+        return showVoteError('Голосование доступно только при STORAGE = supabase.');
+    }
+
+    try {
+        await Playstyle.submitBallot(
+            SUPABASE_URL, SUPABASE_KEY,
+            voteContext.sessionId, voteContext.token, voter, tokens
+        );
+
+        const result = await Playstyle.tryCloseNomination(
+            SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players,
+            voteContext.sessionId, voteContext.token
+        );
+
+        await Playstyle.syncBallotCounts(SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players);
+
+        const ok = document.getElementById('vote-success');
+        ok.style.display = 'block';
+        if (result.closed) {
+            ok.textContent = 'Спасибо! Все проголосовали — итоги стола утверждены.';
+            if (isAdmin()) {
+                try { await pushToCloud(); } catch (e) { console.warn(e); }
+            } else {
+                writeCache(STATE);
+            }
+        } else {
+            ok.textContent = `Голос учтён (${result.ballotCount ?? '?'}/${result.need ?? participants.length} до закрытия).`;
+            writeCache(STATE);
+        }
+
+        document.getElementById('vote-error').style.display = 'none';
+        document.getElementById('vote-submit-btn').disabled = true;
+        Playstyle.recalculatePlaystyle(STATE, STATE.players);
+        renderArchive();
+    } catch (e) {
+        showVoteError(e.message || String(e));
+    }
+}
+
+async function adminCloseNomination(sessionId) {
+    try { requireAdmin(); } catch { return; }
+    const session = STATE.sessions.find(s => s.id === sessionId);
+    if (!session?.nomination || session.nomination.status !== 'open') return;
+
+    let ballots = [];
+    if (STORAGE === 'supabase') {
+        try {
+            ballots = (await Playstyle.fetchBallots(SUPABASE_URL, SUPABASE_KEY, sessionId)) || [];
+        } catch (e) {
+            alert(e.message);
+            return;
+        }
+    }
+
+    const parts = Playstyle.getSessionParticipants(session, STATE.players);
+    const confirmed = Playstyle.aggregateConfirmed(ballots, parts.length);
+
+    if (STORAGE === 'supabase') {
+        await Playstyle.insertNominationClose(SUPABASE_URL, SUPABASE_KEY, sessionId, confirmed);
+    }
+
+    session.nomination.status = 'closed';
+    session.nomination.confirmed = confirmed;
+    session.nomination.ballotCount = ballots.length;
+    session.nomination.closedAt = new Date().toISOString();
+
+    Playstyle.recalculatePlaystyle(STATE, STATE.players);
+    try {
+        await pushToCloud();
+        await refreshAll();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
     await initAuth();
+    const params = new URLSearchParams(location.search);
+    const voteId = params.get('vote');
+    const voteToken = params.get('t');
     await loadCloudData();
+    if (voteId) {
+        const id = Number(voteId);
+        if (!isNaN(id)) openVoteModal(id, voteToken || undefined);
+    }
 });
 </script>
 </body>
