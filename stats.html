@@ -690,17 +690,23 @@ function updateAdminUI() {
 
 async function initAuth() {
     if (!SUPABASE_URL || !SUPABASE_KEY || typeof supabase === 'undefined') return;
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    authSession = session;
-    updateAdminUI();
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
+    try {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const sessionPromise = supabaseClient.auth.getSession();
+        const timeout = new Promise(resolve => setTimeout(() => resolve({ data: { session: null } }), 5000));
+        const { data: { session } } = await Promise.race([sessionPromise, timeout]);
         authSession = session;
         updateAdminUI();
-        if (document.getElementById('page-content') && !document.getElementById('page-content').classList.contains('hidden')) {
-            renderArchive();
-        }
-    });
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+            authSession = session;
+            updateAdminUI();
+            if (document.getElementById('page-content') && !document.getElementById('page-content').classList.contains('hidden')) {
+                renderArchive();
+            }
+        });
+    } catch (e) {
+        console.warn('Auth init:', e);
+    }
 }
 
 function openAuthModal() {
@@ -768,11 +774,17 @@ async function saveJsonbin() {
     }
 }
 
+function fetchWithTimeout(url, options = {}, ms = 25000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
 async function fetchSupabase() {
     if (!SUPABASE_URL || !SUPABASE_KEY) {
         throw new Error('Заполните SUPABASE_URL и SUPABASE_KEY в начале скрипта');
     }
-    const res = await fetch(
+    const res = await fetchWithTimeout(
         `${SUPABASE_URL}/rest/v1/archive?id=eq.1&select=data`,
         { headers: supabaseHeaders() }
     );
@@ -836,14 +848,24 @@ function showPage() {
     document.getElementById('page-content').classList.remove('hidden');
 }
 
+async function refreshAllSafe() {
+    try {
+        await refreshAll();
+    } catch (e) {
+        console.warn('refreshAll:', e);
+    }
+}
+
 async function loadCloudData(force = false) {
     const cached = !force && readCache();
+    const loader = document.getElementById('page-loader');
+
     if (cached) {
         STATE = cached;
         showPage();
-        await refreshAll();
         updateAdminUI();
-        setSyncStatus(true, 'Кэш · общий архив');
+        setSyncStatus(true, 'Кэш · обновление…');
+        refreshAllSafe().then(() => setSyncStatus(true, 'Кэш · общий архив'));
     }
 
     try {
@@ -851,10 +873,10 @@ async function loadCloudData(force = false) {
         STATE = fresh;
         writeCache(fresh);
         showPage();
-        await refreshAll();
         updateAdminUI();
         const labels = { jsonbin: 'JSONBin', supabase: 'Supabase', github: 'GitHub' };
         setSyncStatus(true, isAdmin() ? `${labels[STORAGE] || 'Онлайн'} · админ` : (labels[STORAGE] || 'Онлайн'));
+        await refreshAllSafe();
     } catch (e) {
         if (cached) {
             setSyncStatus(false, 'Офлайн · кэш');
@@ -862,8 +884,8 @@ async function loadCloudData(force = false) {
             return;
         }
         setSyncStatus(false, 'Нет связи');
-        document.getElementById('page-loader').textContent =
-            `Не удалось загрузить архив: ${e.message}`;
+        const msg = e.name === 'AbortError' ? 'Таймаут загрузки Supabase (архив большой или сеть)' : e.message;
+        loader.textContent = `Не удалось загрузить архив: ${msg}`;
         console.error(e);
     }
 }
@@ -886,11 +908,17 @@ async function pushToCloud() {
 async function refreshAll() {
     ensureMmrState();
     recalculateMmr();
-    if (STORAGE === 'supabase') {
-        await Playstyle.mergeNominationClosesFromDb(SUPABASE_URL, SUPABASE_KEY, STATE);
-        await Playstyle.syncBallotCounts(SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players);
+    if (STORAGE === 'supabase' && typeof Playstyle !== 'undefined') {
+        try {
+            await Playstyle.mergeNominationClosesFromDb(SUPABASE_URL, SUPABASE_KEY, STATE);
+            await Playstyle.syncBallotCounts(SUPABASE_URL, SUPABASE_KEY, STATE, STATE.players);
+        } catch (e) {
+            console.warn('Nomination sync:', e);
+        }
+        Playstyle.recalculatePlaystyle(STATE, STATE.players);
+    } else if (typeof Playstyle !== 'undefined') {
+        Playstyle.recalculatePlaystyle(STATE, STATE.players);
     }
-    Playstyle.recalculatePlaystyle(STATE, STATE.players);
     populateFilters();
     renderWinrate();
     renderMmrLeaderboard();
@@ -984,7 +1012,8 @@ function getWinrateRankMap(counts) {
 // MMR / Elo
 // ═══════════════════════════════════════════════════════════════════════════
 
-const MMR_UNCALIBRATED = 'Img/mmr/Uncalibrated.png';
+const MMR_IMG = 'Img/';
+const MMR_UNCALIBRATED = MMR_IMG + 'Uncalibrated.png';
     { min: 0,    prefix: 'recruit',  label: 'Recruit' },
     { min: 1000, prefix: 'Guardian', label: 'Guardian' },
     { min: 1500, prefix: 'Crusader', label: 'Crusader' },
@@ -1189,17 +1218,17 @@ function getMmrLeaderboardRanks() {
 
 function getMmrBadgeSrc(mmr, leaderboardRank) {
     if (mmr === null) return null;
-    if (leaderboardRank === 1) return 'Img/mmr/Titan-Top1.png';
-    if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/mmr/Titan-Top.png';
+    if (leaderboardRank === 1) return MMR_IMG + 'Titan-Top1.png';
+    if (leaderboardRank >= 2 && leaderboardRank <= 10) return MMR_IMG + 'Titan-Top.png';
 
     const info = getTierInfo(mmr);
     if (!info) return null;
-    if (mmr >= 4000) return 'Img/mmr/Titan-default.png';
+    if (mmr >= 4000) return MMR_IMG + 'Titan-default.png';
 
     const file = info.prefix === 'recruit'
         ? `recruit-${info.star}star.png`
         : `${info.prefix}-${info.star}star.png`;
-    return `Img/mmr/${file}`;
+    return MMR_IMG + file;
 }
 
 function formatMmrDelta(n) {
@@ -2187,6 +2216,9 @@ async function adminCloseNomination(sessionId) {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    if (typeof Playstyle === 'undefined') {
+        console.error('playstyle.js не загружен — проверьте, что файл есть на GitHub рядом с HTML.');
+    }
     await initAuth();
     const params = new URLSearchParams(location.search);
     const voteId = params.get('vote');
