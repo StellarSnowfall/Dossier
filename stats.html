@@ -2235,18 +2235,51 @@ async function adminCloseNomination(sessionId) {
     }
 }
 
+const APP_LOAD_VERSION = '2026-06-03-load-v2';
+console.info('[архив] версия загрузчика:', APP_LOAD_VERSION);
+
+function showLoadFailure(hint) {
+    const loader = document.getElementById('page-loader');
+    if (!loader) return;
+    loader.classList.remove('hidden');
+    document.getElementById('page-content')?.classList.add('hidden');
+    loader.innerHTML = `Не удалось загрузить архив.<br><span style="font-size:12px;color:#94a3b8;margin-top:8px;display:inline-block">${hint}</span><br><button type="button" class="nav-btn" style="margin-top:14px" onclick="forceRefresh()">Повторить ↻</button>`;
+    setSyncStatus(false, 'Ошибка');
+}
+
+function startLoadWatchdog(ms = 22000) {
+    return setTimeout(() => {
+        const loader = document.getElementById('page-loader');
+        if (loader && !loader.classList.contains('hidden')) {
+            let hint = 'Загрузка дольше 22 с. Откройте F12 → Network и найдите запрос archive.';
+            if (typeof Playstyle === 'undefined') hint += ' Не загружен playstyle.js (404?).';
+            showLoadFailure(hint);
+        }
+    }, ms);
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+    const watchdog = startLoadWatchdog(22000);
+
     if (typeof Playstyle === 'undefined') {
         console.error('playstyle.js не загружен — проверьте, что файл есть на GitHub рядом с HTML.');
     }
-    await initAuth();
-    const params = new URLSearchParams(location.search);
-    const voteId = params.get('vote');
-    const voteToken = params.get('t');
-    await loadCloudData();
-    if (voteId) {
-        const id = Number(voteId);
-        if (!isNaN(id)) openVoteModal(id, voteToken || undefined);
+
+    try {
+        await initAuth();
+        const params = new URLSearchParams(location.search);
+        const voteId = params.get('vote');
+        const voteToken = params.get('t');
+        await loadCloudData();
+        if (voteId) {
+            const id = Number(voteId);
+            if (!isNaN(id)) openVoteModal(id, voteToken || undefined);
+        }
+    } catch (e) {
+        console.error('[архив] boot error:', e);
+        showLoadFailure(e.message || String(e));
+    } finally {
+        clearTimeout(watchdog);
     }
 });
 </script>
