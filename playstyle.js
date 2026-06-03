@@ -283,16 +283,17 @@
   }
 
   async function fetchBallots(supabaseUrl, key, sessionId) {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/session_ballots?session_id=eq.${sessionId}&select=voter,tokens,created_at`,
-      { headers: { ...supabaseAnonHeaders(supabaseUrl, key), Prefer: 'return=representation' } }
-    );
-    if (res.status === 404 || res.status === 406) return null;
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(t || `ballots ${res.status}`);
+    try {
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/session_ballots?session_id=eq.${sessionId}&select=voter,tokens,created_at`,
+        { headers: { ...supabaseAnonHeaders(supabaseUrl, key), Prefer: 'return=representation' } }
+      );
+      if (res.status === 404 || res.status === 406 || res.status === 400) return null;
+      if (!res.ok) return null;
+      return res.json();
+    } catch {
+      return null;
     }
-    return res.json();
   }
 
   async function submitBallot(supabaseUrl, key, sessionId, voteToken, voter, tokens) {
