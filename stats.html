@@ -62,10 +62,10 @@ a { color: #a78bfa; text-decoration: none; }
     border: 2px solid transparent;
     background:
         linear-gradient(#0a0a14, #0a0a14) padding-box,
-        linear-gradient(120deg, #78350f, #fcd34d, #fef08a, #f59e0b, #fcd34d, #92400e) border-box;
-    background-size: 100% 100%, 220% 220%;
-    animation: shimmer-gold 3.5s ease-in-out infinite;
-    box-shadow: 0 0 16px rgba(250, 204, 21, 0.35), inset 0 0 12px rgba(250, 204, 21, 0.06);
+        linear-gradient(120deg, #a16207, #facc15, #fefce8, #ffffff, #fef08a, #eab308, #a16207) border-box;
+    background-size: 100% 100%, 260% 260%;
+    animation: shimmer-gold 2.8s ease-in-out infinite;
+    box-shadow: 0 0 28px rgba(250, 204, 21, 0.65), 0 0 10px rgba(255, 255, 200, 0.3), inset 0 0 16px rgba(250, 204, 21, 0.1);
 }
 .win-card.rank-silver {
     border: 2px solid transparent;
@@ -217,6 +217,11 @@ a { color: #a78bfa; text-decoration: none; }
 .nomination-badge {
     font-size: 11px; padding: 4px 10px; border-radius: 999px;
     background: rgba(124,58,237,0.15); border: 1px solid #4c1d95; color: #e9d5ff;
+}
+.game-tag-line { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+.game-tag-badge {
+    font-size: 11px; padding: 3px 9px; border-radius: 4px;
+    font-weight: 700; letter-spacing: 0.03em;
 }
 .nomination-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .vote-token-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
@@ -465,6 +470,12 @@ a { color: #a78bfa; text-decoration: none; }
                     <option value="">—</option>
                 </select>
             </div>
+        </div>
+        <div class="token-slot optional" style="margin-top:4px;">
+            <label class="stamp">Тег катки <span style="font-weight:normal;color:#64748b">· необязательно</span></label>
+            <select id="vote-game-tag" class="form-select" style="width:100%">
+                <option value="">— не голосовать —</option>
+            </select>
         </div>
         <p id="vote-error" style="font-size:12px;color:#fb7185;display:none;margin-bottom:8px;"></p>
         <p id="vote-success" class="vote-success" style="display:none;"></p>
@@ -1723,6 +1734,9 @@ function renderArchive() {
             const nomHtml = renderNominationBlock(s);
             const card = document.createElement('div');
             card.className = 'log-card';
+            if (s.nomination?.gameTag?.color) {
+                card.style.borderLeft = `3px solid ${s.nomination.gameTag.color}`;
+            }
             card.innerHTML = `
                 <div class="log-top">
                     <div>
@@ -1914,9 +1928,10 @@ async function saveSession() {
     const prev = editingSessionId ? STATE.sessions.find(s => s.id === editingSessionId) : null;
     const session = { id: sessionId, date, game, mode, notes, roles };
 
+    const sessionParticipants = Playstyle.getSessionParticipants(session, STATE.players);
     if (prev?.nomination?.status === 'closed') {
         session.nomination = { ...prev.nomination };
-    } else {
+    } else if (sessionParticipants.length >= 4) {
         Playstyle.ensureSessionNomination(session, STATE.players);
         if (prev?.nomination?.token) session.nomination.token = prev.nomination.token;
     }
@@ -2034,6 +2049,14 @@ function renderNominationBlock(s) {
         ).join('') + '</div>';
     }
 
+    if (n.gameTag) {
+        const t = n.gameTag;
+        html += `<div class="game-tag-line">
+            <span style="font-size:11px;color:#64748b;">Тег катки:</span>
+            <span class="game-tag-badge" style="background:${t.color}22;border:1px solid ${t.color};color:${t.color};">${escapeHtml(t.label)}</span>
+        </div>`;
+    }
+
     html += '<div class="nomination-actions">';
     if (isOpen) {
         html += `<button type="button" class="nav-btn" onclick="openVoteModal(${s.id})">Проголосовать</button>`;
@@ -2092,10 +2115,14 @@ function openVoteModal(sessionId, tokenFromUrl) {
 
     fillVoteCategorySelect(document.getElementById('vote-c1'), false);
     fillVoteCategorySelect(document.getElementById('vote-c2'), true);
+    const tagSel = document.getElementById('vote-game-tag');
+    tagSel.innerHTML = '<option value="">— не голосовать —</option>' +
+        Playstyle.GAME_TAGS.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+    tagSel.value = '';
 
     document.getElementById('vote-modal-title').textContent = `Жетоны · ${s.game}`;
     document.getElementById('vote-modal-hint').textContent =
-        `Раздайте 1–2 жетона другим участникам (не себе). Номинация утверждается, если ${Playstyle.votesRequired(participants.length)}+ игроков дали тот же жетон одному человеку. Шаг характеристик на радаре — до ${Playstyle.PLAYSTYLE_CONFIG.statStepCap}.`;
+        `Раздайте 1–2 жетона другим участникам (не себе). Номинация утверждается при ${Playstyle.votesRequired(participants.length)}+ одинаковых голосах. Шаг характеристик — до ${Playstyle.PLAYSTYLE_CONFIG.statStepCap}. Тег катки определяет большинство голосов.`;
 
     document.getElementById('vote-error').style.display = 'none';
     document.getElementById('vote-success').style.display = 'none';
@@ -2156,6 +2183,8 @@ async function submitVoteModal() {
 
     const tokens = [{ player: p1, category: c1 }];
     if (p2 && c2) tokens.push({ player: p2, category: c2 });
+    const gameTagVote = document.getElementById('vote-game-tag').value;
+    if (gameTagVote) tokens.push({ player: '__tag', category: gameTagVote });
 
     for (const t of tokens) {
         if (!participants.includes(t.player)) return showVoteError(`«${t.player}» не участвовал в партии.`);
