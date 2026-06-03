@@ -310,7 +310,7 @@ canvas {display:block; margin-top: 10px;}
           </div>
         </div>
         <div class="mmr-rank-wrap">
-          <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/mmr/Uncalibrated.png" alt="MMR">
+          <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/Uncalibrated.png" alt="MMR">
           <span id="char-mmr-label" class="mmr-rank-label"></span>
         </div>
       </div>
@@ -832,7 +832,8 @@ function drawRadar(c) {
 // ── MMR из архива статистики (Supabase) ──
 const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';
-const MMR_UNCALIBRATED = 'Img/mmr/Uncalibrated.png';
+const MMR_IMG = 'Img/';
+const MMR_UNCALIBRATED = MMR_IMG + 'Uncalibrated.png';
 const ARCHIVE_FALLBACK_URL = './data/archive.json';
 
 const GAME_LOGOS = {
@@ -1126,9 +1127,9 @@ function getMmrLeaderboardRanks() {
 }
 
 function getMmrBadgeSrc(mmr, leaderboardRank) {
-  if (leaderboardRank === 1) return 'Img/mmr/Titan-Top1.png';
-  if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/mmr/Titan-Top.png';
-  if (mmr >= 4000) return 'Img/mmr/Titan-default.png';
+  if (leaderboardRank === 1) return MMR_IMG + 'Titan-Top1.png';
+  if (leaderboardRank >= 2 && leaderboardRank <= 10) return MMR_IMG + 'Titan-Top.png';
+  if (mmr >= 4000) return MMR_IMG + 'Titan-default.png';
 
   let tierIdx = 0;
   for (let i = MMR_TIERS.length - 1; i >= 0; i--) {
@@ -1142,7 +1143,7 @@ function getMmrBadgeSrc(mmr, leaderboardRank) {
   const file = tier.prefix === 'recruit'
     ? `recruit-${star}star.png`
     : `${tier.prefix}-${star}star.png`;
-  return `Img/mmr/${file}`;
+  return MMR_IMG + file;
 }
 
 function updateMmrBadge(playerName) {
@@ -1175,16 +1176,20 @@ function updateMmrBadge(playerName) {
 }
 
 async function loadArchiveMmr() {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000);
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/archive?id=eq.1&select=data`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: ctrl.signal }
     );
+    clearTimeout(timer);
     if (res.ok) {
       const rows = await res.json();
       if (rows.length) ARCHIVE = normalizeArchive(rows[0].data);
     }
   } catch (e) {
+    clearTimeout(timer);
     console.warn('MMR: Supabase недоступен', e);
   }
 
