@@ -282,9 +282,15 @@
     return h;
   }
 
+  function fetchWithTimeout(url, options = {}, ms = 12000) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(timer));
+  }
+
   async function fetchBallots(supabaseUrl, key, sessionId) {
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/session_ballots?session_id=eq.${sessionId}&select=voter,tokens,created_at`,
         { headers: { ...supabaseAnonHeaders(supabaseUrl, key), Prefer: 'return=representation' } }
       );
@@ -320,13 +326,17 @@
   }
 
   async function fetchNominationCloses(supabaseUrl, key) {
-    const res = await fetch(
-      `${supabaseUrl}/rest/v1/nomination_closes?select=session_id,confirmed,closed_at`,
-      { headers: supabaseAnonHeaders(supabaseUrl, key) }
-    );
-    if (res.status === 404 || res.status === 406) return [];
-    if (!res.ok) return [];
-    return res.json();
+    try {
+      const res = await fetchWithTimeout(
+        `${supabaseUrl}/rest/v1/nomination_closes?select=session_id,confirmed,closed_at`,
+        { headers: supabaseAnonHeaders(supabaseUrl, key) }
+      );
+      if (res.status === 404 || res.status === 406 || res.status === 400) return [];
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
   }
 
   async function insertNominationClose(supabaseUrl, key, sessionId, confirmed) {
