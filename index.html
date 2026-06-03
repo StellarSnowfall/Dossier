@@ -310,7 +310,7 @@ canvas {display:block; margin-top: 10px;}
           </div>
         </div>
         <div class="mmr-rank-wrap">
-          <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/Uncalibrated.png" alt="MMR">
+          <img id="char-mmr-badge" class="mmr-rank-badge" src="Img/mmr/Uncalibrated.png" alt="MMR">
           <span id="char-mmr-label" class="mmr-rank-label"></span>
         </div>
       </div>
@@ -331,7 +331,7 @@ canvas {display:block; margin-top: 10px;}
   <div class="main-content">
     <div class="left-col">
       <div id="tab-stats">
-        <div class="section-title" id="stat-title-color">Базовые показатели (&minus;5 до +5)</div>
+        <div class="section-title" id="stat-title-color">Показатели (&minus;5 до +5, шаг 0.1)</div>
         <div class="stat-rows" id="stat-rows"></div>
       </div>
       <div id="tab-bio" class="hidden">
@@ -355,6 +355,7 @@ canvas {display:block; margin-top: 10px;}
   </div>
 </div>
 
+<script src="playstyle.js"></script>
 <script>
 const STAT_NAMES = ['Адекватность', 'Скилл', 'Интрига', 'Орешки', 'Стойкость', 'Убеждение'];
 const STAT_COLORS = {
@@ -367,7 +368,7 @@ const STAT_COLORS = {
 };
 
 function clampStat(v) {
-  return Math.max(-5, Math.min(5, Math.round(v * 2) / 2));
+  return Math.max(-5, Math.min(5, Math.round(v * 10) / 10));
 }
 
 function computeStats(baseStats, traitBlocks) {
@@ -385,8 +386,13 @@ function computeStats(baseStats, traitBlocks) {
 }
 
 function getCharStats(c) {
-  if (c.baseStats) return computeStats(c.baseStats, c.traitBlocks);
-  return c.stats;
+  if (!c.baseStats) return c.stats;
+  const vals = Playstyle.applyDriftToStats(c.baseStats, c.traitBlocks, c.name, ARCHIVE);
+  return STAT_NAMES.map(name => ({
+    name,
+    val: vals[name],
+    color: STAT_COLORS[name]
+  }));
 }
 
 function formatTraitMods(mods) {
@@ -826,7 +832,7 @@ function drawRadar(c) {
 // ── MMR из архива статистики (Supabase) ──
 const SUPABASE_URL = 'https://icnvehohabclgabeddjo.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbnZlaG9oYWJjbGdhYmVkZGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwMzkzMjgsImV4cCI6MjA5NTYxNTMyOH0.bxoVcaRQLVgFRmHHiEW1A8A-PwAa-HZ5xMypXNOEV_Y';
-const MMR_UNCALIBRATED = 'Img/Uncalibrated.png';
+const MMR_UNCALIBRATED = 'Img/mmr/Uncalibrated.png';
 const ARCHIVE_FALLBACK_URL = './data/archive.json';
 
 const GAME_LOGOS = {
@@ -964,7 +970,12 @@ function normalizeArchive(raw) {
     if (!mmr.ratings[name]) mmr.ratings[name] = defaultPlayerRating(base);
   });
 
-  return { players, games, sessions: payload.sessions, mmr };
+  const playstyle = {
+    version: 1,
+    players: { ...(payload.playstyle?.players || {}) }
+  };
+
+  return { players, games, sessions: payload.sessions, mmr, playstyle };
 }
 
 function isSessionMmrEligible(session) {
@@ -1115,9 +1126,9 @@ function getMmrLeaderboardRanks() {
 }
 
 function getMmrBadgeSrc(mmr, leaderboardRank) {
-  if (leaderboardRank === 1) return 'Img/Titan-Top1.png';
-  if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/Titan-Top.png';
-  if (mmr >= 4000) return 'Img/Titan-default.png';
+  if (leaderboardRank === 1) return 'Img/mmr/Titan-Top1.png';
+  if (leaderboardRank >= 2 && leaderboardRank <= 10) return 'Img/mmr/Titan-Top.png';
+  if (mmr >= 4000) return 'Img/mmr/Titan-default.png';
 
   let tierIdx = 0;
   for (let i = MMR_TIERS.length - 1; i >= 0; i--) {
@@ -1131,7 +1142,7 @@ function getMmrBadgeSrc(mmr, leaderboardRank) {
   const file = tier.prefix === 'recruit'
     ? `recruit-${star}star.png`
     : `${tier.prefix}-${star}star.png`;
-  return `Img/${file}`;
+  return `Img/mmr/${file}`;
 }
 
 function updateMmrBadge(playerName) {
@@ -1186,7 +1197,16 @@ async function loadArchiveMmr() {
     }
   }
 
-  if (ARCHIVE) recalculateArchiveMmr();
+  if (ARCHIVE) {
+    recalculateArchiveMmr();
+    if (typeof Playstyle !== 'undefined') {
+      try {
+        await Playstyle.mergeNominationClosesFromDb(SUPABASE_URL, SUPABASE_KEY, ARCHIVE);
+      } catch (e) { console.warn('nomination merge', e); }
+      Playstyle.ensurePlaystyleState(ARCHIVE);
+      Playstyle.recalculatePlaystyle(ARCHIVE, ARCHIVE.players);
+    }
+  }
 }
 
 async function boot() {
