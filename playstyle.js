@@ -116,10 +116,14 @@
         token: randomToken(),
         confirmed: [],
         participantCount: participants.length,
-        ballotCount: 0
+        ballotCount: 0,
+        closesAt: new Date(Date.now() + 72 * 3600 * 1000).toISOString()
       };
     } else if (!session.nomination.token) {
       session.nomination.token = randomToken();
+    }
+    if (!session.nomination.closesAt) {
+      session.nomination.closesAt = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
     }
     session.nomination.participantCount = participants.length;
     return session.nomination;
@@ -487,6 +491,7 @@
     applyDriftToStats,
     fetchBallots,
     submitBallot,
+    insertNominationClose,
     mergeNominationClosesFromDb,
     syncBallotCounts,
     tryCloseNomination,
