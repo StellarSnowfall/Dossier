@@ -261,6 +261,83 @@ canvas {display:block; margin-top: 10px;}
 .trait-mods .mod-up {color:#86efac;}
 .trait-mods .mod-down {color:#f87171;}
 
+/* ── Регалии / достижения ── */
+.regalia-counter {
+    font-size: 12px; color: #64748b; margin-bottom: 18px; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 8px;
+}
+.regalia-counter .count-num { font-size: 16px; font-weight: 800; color: #f8fafc; }
+.regalia-section-title {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #475569;
+    margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #1e293b;
+}
+.regalia-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 12px;
+}
+.ach-card {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    cursor: pointer; position: relative;
+    transition: transform 0.15s;
+}
+.ach-card:hover { transform: translateY(-2px); }
+.ach-img-wrap {
+    width: 76px; height: 76px; border-radius: 10px; overflow: hidden;
+    border: 2px solid #2d2d4e; position: relative; background: #0a0a14;
+    display: flex; align-items: center; justify-content: center;
+}
+.ach-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ach-img-wrap.locked { filter: grayscale(1) brightness(0.35); }
+.ach-img-placeholder {
+    font-size: 28px; color: #334155;
+}
+.ach-card.earned .ach-img-wrap { border-width: 2px; }
+.ach-rarity-white  .ach-img-wrap { border-color: #cbd5e1; box-shadow: 0 0 10px rgba(203,213,225,0.35); }
+.ach-rarity-green  .ach-img-wrap { border-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.4); }
+.ach-rarity-blue   .ach-img-wrap { border-color: #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.45); }
+.ach-rarity-purple .ach-img-wrap { border-color: #a855f7; box-shadow: 0 0 10px rgba(168,85,247,0.45); }
+.ach-rarity-red    .ach-img-wrap { border-color: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
+.ach-rarity-gold   .ach-img-wrap { border-color: #f59e0b; box-shadow: 0 0 14px rgba(245,158,11,0.6); animation: ach-gold-pulse 2.5s ease-in-out infinite; }
+@keyframes ach-gold-pulse { 0%,100%{box-shadow:0 0 10px rgba(245,158,11,0.5)} 50%{box-shadow:0 0 22px rgba(245,158,11,0.9)} }
+.ach-name {
+    font-size: 10px; text-align: center; color: #94a3b8; line-height: 1.3;
+    max-width: 84px; overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.ach-card.earned .ach-name { color: #e2e8f0; font-weight: 600; }
+.ach-count-badge {
+    position: absolute; bottom: 4px; right: 4px;
+    background: rgba(0,0,0,0.75); border-radius: 4px;
+    font-size: 10px; font-weight: 800; padding: 1px 5px; font-family: monospace;
+    color: #f8fafc;
+}
+/* Модал достижения */
+.ach-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 16px;
+}
+.ach-modal {
+    background: #13131f; border: 1px solid #2d2d4e; border-radius: 16px;
+    width: 100%; max-width: 420px; overflow: hidden;
+}
+.ach-modal-img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.ach-modal-img-placeholder {
+    width: 100%; aspect-ratio: 1; background: #0a0a14;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px; color: #334155;
+}
+.ach-modal-body { padding: 20px; }
+.ach-modal-title { font-size: 20px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
+.ach-modal-rarity { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+.ach-modal-meta { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.ach-modal-howto { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+.ach-modal-close {
+    margin-top: 16px; width: 100%; padding: 10px;
+    background: #1e293b; border: 1px solid #2d2d4e; border-radius: 8px;
+    color: #e2e8f0; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.ach-modal-close:hover { background: #293548; }
+
 /* Футер */
 .footer-bar {
     background:#0a0a14; border-top:1px solid #2d2d4e; padding:10px 24px; 
@@ -326,6 +403,7 @@ canvas {display:block; margin-top: 10px;}
     <button class="tab active" onclick="switchTab('stats',this)">Характеристики</button>
     <button class="tab" onclick="switchTab('bio',this)">Бэкграунд</button>
     <button class="tab" id="tab-traits-btn" onclick="switchTab('traits',this)">Трейты</button>
+    <button class="tab" id="tab-regalia-btn" onclick="switchTab('regalia',this)">Регалии</button>
   </div>
 
   <div class="main-content">
@@ -341,6 +419,7 @@ canvas {display:block; margin-top: 10px;}
         <div style="margin-top:20px"><div class="section-title">Связи</div><div class="bg-text" id="char-links"></div></div>
       </div>
       <div id="tab-traits-content" class="hidden"></div>
+      <div id="tab-regalia-content" class="hidden"></div>
     </div>
     
     <div class="right-col">
@@ -352,6 +431,19 @@ canvas {display:block; margin-top: 10px;}
   <div class="footer-bar">
     <span class="footer-note" id="footer-note"></span>
     <span class="footer-id" id="footer-id"></span>
+  </div>
+</div>
+
+<div id="ach-modal-overlay" class="ach-modal-overlay hidden" onclick="if(event.target===this)closeAchModal()">
+  <div class="ach-modal" id="ach-modal-box">
+    <div id="ach-modal-img-area"></div>
+    <div class="ach-modal-body">
+      <div class="ach-modal-title" id="ach-modal-title"></div>
+      <div class="ach-modal-rarity" id="ach-modal-rarity"></div>
+      <div class="ach-modal-meta" id="ach-modal-meta"></div>
+      <div class="ach-modal-howto" id="ach-modal-howto"></div>
+      <button class="ach-modal-close" onclick="closeAchModal()">Закрыть</button>
+    </div>
   </div>
 </div>
 
@@ -658,6 +750,45 @@ const chars = [
       }
     ],
     id:"ID: ALN-012"
+  },
+  {
+    name:"Темирлан", img:"Img/temirlan.png", date:"06/05/2026", faction:"Отречённые",
+    risk:"minimal",
+    baseStats:{ 'Адекватность':0,'Скилл':0,'Убеждение':0,'Интрига':0,'Стойкость':0,'Орешки':0 },
+    traits:[{label:"Новичок",cls:"trait-gray",idx:0}],
+    bg:"Появится в будущем", motiv:"Появится в будущем", links:"Появится в будущем",
+    traitBlocks:[
+      {
+        title:"Новичок", cls:"gray", titleColor:"#94a3b8",
+        desc:"Только делает первые шаги в мире настольных игр. Каждая партия — новый опыт.",
+        mods:{ 'Адекватность':-1,'Скилл':-1,'Убеждение':-1,'Интрига':-1,'Стойкость':-1,'Орешки':-1 }
+      }
+    ],
+    id:"ID: TMR-013"
+  },
+  {
+    name:"Радмир", img:"Img/radmir.png", date:"06/05/2026", faction:"Отречённые",
+    risk:"minimal",
+    baseStats:{ 'Адекватность':0,'Скилл':0,'Убеждение':0,'Интрига':0,'Стойкость':0,'Орешки':0 },
+    traits:[{label:"Новичок",cls:"trait-gray",idx:0}],
+    bg:"Появится в будущем", motiv:"Появится в будущем", links:"Появится в будущем",
+    traitBlocks:[
+      {
+        title:"Новичок", cls:"gray", titleColor:"#94a3b8",
+        desc:"Только делает первые шаги в мире настольных игр. Каждая партия — новый опыт.",
+        mods:{ 'Адекватность':-1,'Скилл':-1,'Убеждение':-1,'Интрига':-1,'Стойкость':-1,'Орешки':-1 }
+      }
+    ],
+    id:"ID: RDM-014"
+  },
+  {
+    name:"Алихан", img:"Img/alikhan.png", date:"06/05/2026", faction:"Отречённые",
+    risk:"minimal",
+    baseStats:{ 'Адекватность':0,'Скилл':0,'Убеждение':0,'Интрига':0,'Стойкость':0,'Орешки':0 },
+    traits:[],
+    bg:"Появится в будущем", motiv:"Появится в будущем", links:"Появится в будущем",
+    traitBlocks:[],
+    id:"ID: ALK-015"
   }
 ];
 
@@ -740,6 +871,10 @@ function loadChar(i) {
   drawRadar({ ...c, stats, accent });
   updateMmrBadge(c.name);
   renderRecentGames(c.name);
+
+  const sessions = (ARCHIVE && ARCHIVE.sessions) ? ARCHIVE.sessions : [];
+  window._archiveSessions = sessions;
+  document.getElementById("tab-regalia-content").innerHTML = renderRegalia(c, sessions);
 }
 
 function switchTab(tab, btn) {
@@ -749,6 +884,177 @@ function switchTab(tab, btn) {
   document.getElementById("tab-stats").classList.toggle("hidden", tab!=="stats");
   document.getElementById("tab-bio").classList.toggle("hidden", tab!=="bio");
   document.getElementById("tab-traits-content").classList.toggle("hidden", tab!=="traits");
+  document.getElementById("tab-regalia-content").classList.toggle("hidden", tab!=="regalia");
+}
+
+/* ── Достижения ── */
+const RARITY_META = {
+  white:  { label: 'Обычное',    color: '#cbd5e1' },
+  green:  { label: 'Необычное',  color: '#22c55e' },
+  blue:   { label: 'Редкое',     color: '#3b82f6' },
+  purple: { label: 'Эпическое',  color: '#a855f7' },
+  red:    { label: 'Мифическое', color: '#ef4444' },
+  gold:   { label: 'Легендарное',color: '#f59e0b' }
+};
+
+const ACHIEVEMENTS = [
+  { id:'kraken',   label:'Кракен доволен',          type:'progressive', game:'Накорми Кракена',
+    howTo:'Победа за роль Ктулху в «Накорми Кракена»',   img:'Img/Кракен.jpeg',
+    thresholds:[1,3,5,8,11,15], rarities:['white','green','blue','purple','red','gold'],
+    compute:(n,ss)=>ss.filter(s=>s.game==='Накорми Кракена'&&(s.roles||[]).some(r=>r.player===n&&r.role==='Ктулху'&&r.won)).length },
+  { id:'jump',     label:'Лучше прыгну сам',         type:'progressive', game:'Накорми Кракена',
+    howTo:'Вручную',                                      img:'Img/Прыжок.jpeg',
+    thresholds:[1,3,5,10], rarities:['blue','purple','red','gold'],
+    compute:null },
+  { id:'legion',   label:'Имя мне — легион',         type:'progressive', game:'Судный день',
+    howTo:'Победа за роль Легион в «Судный день»',        img:'Img/Легион.jpeg',
+    thresholds:[1,3,5,8,11,15], rarities:['white','green','blue','purple','red','gold'],
+    compute:(n,ss)=>ss.filter(s=>s.game==='Судный день'&&(s.roles||[]).some(r=>r.player===n&&r.role==='Легион'&&r.won)).length },
+  { id:'fallen',   label:'Марш Павших',              type:'unique',      game:'Судный день',
+    howTo:'Победа за роль Павший в «Судный день»',        img:'Img/Марш Павших.jpeg',
+    rarity:'red',
+    compute:(n,ss)=>Math.min(1,ss.filter(s=>s.game==='Судный день'&&(s.roles||[]).some(r=>r.player===n&&r.role==='Павший'&&r.won)).length) },
+  { id:'immortal', label:'Бессмертный',              type:'unique',      game:'Судный день',
+    howTo:'Вручную',                                      img:'Img/Бессмертный.jpeg',
+    rarity:'red', compute:null },
+  { id:'portals',  label:'Терпеть не могу порталы',  type:'unique',      game:'Судный день',
+    howTo:'Вручную',                                      img:'Img/Белиал.jpeg',
+    rarity:'purple', compute:null },
+  { id:'survivor', label:'Выживший',                 type:'unique',      game:'Судный день',
+    howTo:'Вручную',                                      img:'Img/Выживший.jpeg',
+    rarity:'purple', compute:null },
+  { id:'outcast',  label:'Изгой',                    type:'progressive', game:'Судный день',
+    howTo:'Победа за роль Изгой в «Судный день»',         img:'Img/Изгой.jpeg',
+    thresholds:[1,3,5,8,11,15], rarities:['white','green','blue','purple','red','gold'],
+    compute:(n,ss)=>ss.filter(s=>s.game==='Судный день'&&(s.roles||[]).some(r=>r.player===n&&r.role==='Изгой'&&r.won)).length },
+  { id:'chimera',  label:'Химера',                   type:'unique',      game:'Судный день',
+    howTo:'Вручную',                                      img:'Img/Химера.jpeg',
+    rarity:'purple', compute:null },
+  { id:'own',      label:'Я СВОЙ!',                  type:'unique',      game:'Общее',
+    howTo:'Вручную',                                      img:null,
+    rarity:'blue', compute:null },
+  { id:'lastchance',label:'Последний Шанс',          type:'unique',      game:'Письма Призрака',
+    howTo:'Вручную',                                      img:null,
+    rarity:'purple', compute:null },
+  { id:'leader',   label:'Предводитель',             type:'progressive', game:'Судный день',
+    howTo:'Вручную',                                      img:null,
+    thresholds:[1,3,5,8,11,15], rarities:['white','green','blue','purple','red','gold'],
+    compute:null },
+  { id:'david',    label:'Давид против Голиафа',     type:'progressive', game:'Перудо',
+    howTo:'Вручную',                                      img:'Img/Давид.jpeg',
+    thresholds:[1,3,5,8,11,15], rarities:['white','green','blue','purple','red','gold'],
+    compute:null },
+  { id:'perfect',  label:'Идеальная игра',           type:'unique',      game:'Перудо',
+    howTo:'Вручную',                                      img:'Img/Идеал.jpeg',
+    rarity:'gold', compute:null },
+  { id:'unluck',   label:'Анлак',                    type:'progressive', game:'Общее',
+    howTo:'Проигрыш в партии, где победил Дияр',          img:'Img/Анлак.jpeg',
+    thresholds:[1,5,10,25,50,100], rarities:['white','green','blue','purple','red','gold'],
+    compute:(n,ss)=>{
+      if(n==='Дияр')return 0;
+      return ss.filter(s=>{
+        const pr=(s.roles||[]).find(r=>r.player===n);
+        const dr=(s.roles||[]).find(r=>r.player==='Дияр');
+        return pr&&!pr.won&&dr&&dr.won;
+      }).length;
+    }},
+  { id:'fragile',  label:'Хрупкий рассудок',        type:'progressive', game:'Общее',
+    howTo:'Вручную',                                      img:null,
+    thresholds:[1,3,5,8,11,15], rarities:['white','green','blue','purple','red','gold'],
+    compute:null }
+];
+
+function getAchCount(ach, charName, regalia, sessions) {
+  if (ach.compute) return ach.compute(charName, sessions || []);
+  return (regalia && regalia[ach.id]) || 0;
+}
+
+function getProgressiveRarity(ach, count) {
+  if (!count) return null;
+  let idx = 0;
+  for (let i = 0; i < ach.thresholds.length; i++) {
+    if (count >= ach.thresholds[i]) idx = i;
+  }
+  return ach.rarities[idx];
+}
+
+function getAchRarity(ach, count) {
+  if (!count) return null;
+  if (ach.type === 'unique') return ach.rarity;
+  return getProgressiveRarity(ach, count);
+}
+
+let _achModalData = null;
+
+function openAchModal(id, charName, regalia, sessions) {
+  const ach = ACHIEVEMENTS.find(a => a.id === id);
+  if (!ach) return;
+  const count = getAchCount(ach, charName, regalia, sessions);
+  const rarity = getAchRarity(ach, count) || (ach.type === 'unique' ? ach.rarity : ach.rarities[0]);
+  const rm = RARITY_META[rarity] || RARITY_META.white;
+
+  const imgArea = document.getElementById('ach-modal-img-area');
+  if (ach.img) {
+    imgArea.innerHTML = `<img class="ach-modal-img" src="${ach.img}" alt="${ach.label}">`;
+  } else {
+    imgArea.innerHTML = `<div class="ach-modal-img-placeholder">🏆</div>`;
+  }
+
+  const box = document.getElementById('ach-modal-box');
+  box.style.borderColor = rm.color;
+  box.style.boxShadow = `0 0 24px ${rm.color}44`;
+
+  document.getElementById('ach-modal-title').textContent = ach.label;
+  document.getElementById('ach-modal-rarity').textContent = rm.label;
+  document.getElementById('ach-modal-rarity').style.color = rm.color;
+  document.getElementById('ach-modal-meta').innerHTML =
+    `Игра: <b>${ach.game}</b>${ach.type==='progressive' && count ? ` · Получено: <b>${count}</b>` : ''}`;
+  document.getElementById('ach-modal-howto').textContent = ach.howTo;
+
+  document.getElementById('ach-modal-overlay').classList.remove('hidden');
+}
+
+function closeAchModal() {
+  document.getElementById('ach-modal-overlay').classList.add('hidden');
+}
+
+function renderRegalia(charObj, sessions) {
+  const regalia = charObj.regalia || {};
+  const earned = ACHIEVEMENTS.filter(a => getAchCount(a, charObj.name, regalia, sessions) > 0);
+  const total = ACHIEVEMENTS.length;
+  const earnedCount = earned.length;
+
+  const unique = ACHIEVEMENTS.filter(a => a.type === 'unique');
+  const progressive = ACHIEVEMENTS.filter(a => a.type === 'progressive');
+
+  function cardHtml(ach) {
+    const count = getAchCount(ach, charObj.name, regalia, sessions);
+    const isEarned = count > 0;
+    const rarity = isEarned ? getAchRarity(ach, count) : (ach.type==='unique' ? ach.rarity : ach.rarities[0]);
+    const rm = RARITY_META[rarity] || RARITY_META.white;
+    const rarityClass = isEarned ? `ach-rarity-${rarity}` : '';
+    const earnedClass = isEarned ? 'earned' : '';
+    const lockedClass = isEarned ? '' : 'locked';
+    const countBadge = (ach.type==='progressive' && isEarned) ? `<div class="ach-count-badge">×${count}</div>` : '';
+    const imgInner = ach.img
+      ? `<img src="${ach.img}" alt="${ach.label}">`
+      : `<div class="ach-img-placeholder">🏆</div>`;
+    return `<div class="ach-card ${earnedClass} ${rarityClass}" onclick="openAchModal('${ach.id}','${charObj.name}',${JSON.stringify(regalia)},window._archiveSessions||[])">
+      <div class="ach-img-wrap ${lockedClass}">
+        ${imgInner}
+        ${countBadge}
+      </div>
+      <div class="ach-name" style="${isEarned?'color:'+rm.color:''}">${ach.label}</div>
+    </div>`;
+  }
+
+  return `<div class="regalia-counter">
+      <span class="count-num">${earnedCount}</span>/<span>${total}</span> достижений получено
+    </div>
+    <div class="regalia-section-title">Уникальные</div>
+    <div class="regalia-grid">${unique.map(cardHtml).join('')}</div>
+    <div class="regalia-section-title">Прогрессивные</div>
+    <div class="regalia-grid">${progressive.map(cardHtml).join('')}</div>`;
 }
 
 function drawRadar(c) {
