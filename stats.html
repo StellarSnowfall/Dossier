@@ -223,6 +223,9 @@ a { color: #a78bfa; text-decoration: none; }
     font-size: 11px; padding: 3px 9px; border-radius: 4px;
     font-weight: 700; letter-spacing: 0.03em;
 }
+.vote-countdown { font-size: 11px; color: #64748b; font-family: monospace; margin-top: 4px; }
+.vote-countdown.expiring { color: #fb7185; }
+.log-duration { font-size: 12px; color: #64748b; margin-top: 4px; }
 .nomination-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .vote-token-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
 .vote-token-row input { flex: 1; min-width: 180px; font-size: 11px; font-family: monospace; }
@@ -339,6 +342,9 @@ a { color: #a78bfa; text-decoration: none; }
                     <option value="offline">Оффлайн</option>
                     <option value="online">Онлайн</option>
                 </select>
+                <select id="filter-tag" class="form-select" onchange="renderArchive()">
+                    <option value="">Все теги</option>
+                </select>
             </div>
             <button class="nav-btn primary admin-only" onclick="openSessionModal()">+ Добавить</button>
             <button class="nav-btn admin-only" onclick="openSettingsModal()" title="Игры и игроки">⚙</button>
@@ -375,6 +381,10 @@ a { color: #a78bfa; text-decoration: none; }
                 <label class="stamp" style="color:#a78bfa;margin-bottom:8px;">Игроки и роли</label>
                 <div id="form-players-root"></div>
                 <button type="button" class="nav-btn" style="width:100%;margin-top:6px;font-size:12px;" onclick="addEmptyRoleRow()">+ Добавить роль</button>
+            </div>
+            <div class="field">
+                <label class="stamp">Длительность (минуты)</label>
+                <input type="number" id="f-duration" class="form-input" min="1" max="999" placeholder="Необязательно">
             </div>
             <div class="field">
                 <label class="stamp">Заметки</label>
@@ -548,7 +558,10 @@ const DEFAULT_STATE = {
         'Куттыбек',
         'Еркебулан',
         'Мирас',
-        'Алан'
+        'Алан',
+        'Темирлан',
+        'Радмир',
+        'Алихан'
     ],
     games: [
         { name: 'Секретный Гитлер', roles: ['Либерал', 'Фашист', 'Гитлер'], mmrType: 'team' },
@@ -560,7 +573,14 @@ const DEFAULT_STATE = {
         { name: 'Судный день', roles: ['Человек', 'Машина', 'Изгой', 'Легион', 'Павший'], mmrType: 'team' },
         { name: 'Доминион', roles: [], mmrType: 'ffa' },
         { name: 'Накорми Кракена', roles: ['Моряк', 'Пират', 'Ктулху'], mmrType: 'team' },
-        { name: 'Манчкин', roles: [], mmrType: 'ffa' }
+        { name: 'Манчкин', roles: [], mmrType: 'ffa' },
+        { name: 'Перудо', roles: [], mmrType: 'ffa' },
+        {
+            name: 'Авалон',
+            roles: ['Мерлин', 'Персиваль', 'Верный слуга', 'Убийца', 'Мордред', 'Оберон', 'Моргана', 'Миньон'],
+            mmrType: 'team'
+        },
+        { name: 'Цитадели', roles: [], mmrType: 'ffa' }
     ],
     sessions: [],
     mmr: {
@@ -1649,12 +1669,18 @@ function populateFilters() {
     const fg = document.getElementById('filter-game');
     const fp = document.getElementById('filter-player');
     const fm = document.getElementById('filter-mode');
-    const gVal = fg.value, pVal = fp.value, mVal = fm?.value || '';
+    const ft = document.getElementById('filter-tag');
+    const gVal = fg.value, pVal = fp.value, mVal = fm?.value || '', tVal = ft?.value || '';
 
     fg.innerHTML = '<option value="">Все игры</option>' +
         STATE.games.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
     fp.innerHTML = '<option value="">Все игроки</option>' +
         STATE.players.map(p => `<option value="${p}">${p}</option>`).join('');
+    if (ft) {
+        ft.innerHTML = '<option value="">Все теги</option>' +
+            Playstyle.GAME_TAGS.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+        ft.value = tVal;
+    }
 
     fg.value = gVal;
     fp.value = pVal;
@@ -1676,11 +1702,13 @@ function renderArchive() {
     const fGame = document.getElementById('filter-game').value;
     const fPlayer = document.getElementById('filter-player').value;
     const fMode = document.getElementById('filter-mode')?.value || '';
+    const fTag = document.getElementById('filter-tag')?.value || '';
 
     let list = [...STATE.sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
     if (fGame) list = list.filter(s => s.game === fGame);
     if (fPlayer) list = list.filter(s => (s.roles || []).some(r => r.player === fPlayer));
     if (fMode) list = list.filter(s => sessionMode(s) === fMode);
+    if (fTag) list = list.filter(s => s.nomination?.gameTag?.id === fTag);
 
     if (!list.length) {
         const filtered = fGame || fPlayer || fMode;
@@ -1737,11 +1765,13 @@ function renderArchive() {
             if (s.nomination?.gameTag?.color) {
                 card.style.borderLeft = `3px solid ${s.nomination.gameTag.color}`;
             }
+            const durationLine = s.duration ? `<div class="log-duration">⏱ ${s.duration} мин.</div>` : '';
             card.innerHTML = `
                 <div class="log-top">
                     <div>
                         <div class="log-game" style="color:${gameColor}">${s.game}</div>
                         <div class="log-meta">Формат: <b>${modeLabel}</b> · Участники: <b>${participants || '—'}</b></div>
+                        ${durationLine}
                     </div>
                     ${adminActions}
                 </div>
@@ -1762,6 +1792,7 @@ function openSessionModal() {
     document.getElementById('session-modal-title').textContent = 'Добавить партию';
     document.getElementById('f-date').valueAsDate = new Date();
     document.getElementById('f-notes').value = '';
+    document.getElementById('f-duration').value = '';
     document.getElementById('form-players-root').innerHTML = '';
     setSessionMode('offline');
     renderParticipantsPills([]);
@@ -1784,6 +1815,7 @@ function editSession(id) {
     document.getElementById('f-date').value = s.date;
     document.getElementById('f-game').value = s.game;
     document.getElementById('f-notes').value = s.notes || '';
+    document.getElementById('f-duration').value = s.duration || '';
     document.getElementById('form-players-root').innerHTML = '';
     setSessionMode(s.mode === 'online' ? 'online' : 'offline');
     const selected = Array.from(new Set((s.roles || []).map(r => r.player)));
@@ -1924,14 +1956,18 @@ async function saveSession() {
         });
     });
 
+    const durationVal = document.getElementById('f-duration').value;
+    const duration = durationVal ? parseInt(durationVal, 10) : null;
+
     const sessionId = editingSessionId || Date.now();
     const prev = editingSessionId ? STATE.sessions.find(s => s.id === editingSessionId) : null;
     const session = { id: sessionId, date, game, mode, notes, roles };
+    if (duration) session.duration = duration;
 
     const sessionParticipants = Playstyle.getSessionParticipants(session, STATE.players);
     if (prev?.nomination?.status === 'closed') {
         session.nomination = { ...prev.nomination };
-    } else if (sessionParticipants.length >= 4) {
+    } else if (sessionParticipants.length >= 4 && date >= '2026-06-04') {
         Playstyle.ensureSessionNomination(session, STATE.players);
         if (prev?.nomination?.token) session.nomination.token = prev.nomination.token;
     }
@@ -2040,8 +2076,23 @@ function renderNominationBlock(s) {
         : 'Голосование закрыто';
     if (isOpen && voted >= total) statusText += ' · все проголосовали';
 
+    let countdownHtml = '';
+    if (isOpen && n.closesAt) {
+        const msLeft = new Date(n.closesAt) - Date.now();
+        if (msLeft > 0) {
+            const h = Math.floor(msLeft / 3600000);
+            const m = Math.floor((msLeft % 3600000) / 60000);
+            const expiring = msLeft < 3 * 3600000;
+            const cls = expiring ? 'vote-countdown expiring' : 'vote-countdown';
+            countdownHtml = `<div class="${cls}" data-closes="${n.closesAt}">⏳ Истекает через: ${h}ч ${m}м</div>`;
+        } else {
+            countdownHtml = `<div class="vote-countdown expiring">⏳ Время истекло — голосование можно закрыть вручную</div>`;
+        }
+    }
+
     let html = `<div class="log-nomination">
-        <div class="nomination-status ${isOpen ? 'open' : 'closed'}">${statusText}</div>`;
+        <div class="nomination-status ${isOpen ? 'open' : 'closed'}">${statusText}</div>
+        ${countdownHtml}`;
 
     if (n.confirmed?.length) {
         html += '<div class="nomination-badges">' + n.confirmed.map(c =>
@@ -2248,13 +2299,21 @@ async function adminCloseNomination(sessionId) {
 
     const parts = Playstyle.getSessionParticipants(session, STATE.players);
     const confirmed = Playstyle.aggregateConfirmed(ballots, parts.length);
+    const gameTag = Playstyle.resolveGameTag(ballots);
+    const confirmedForDb = gameTag ? [...confirmed, { _type: 'gametag', ...gameTag }] : confirmed;
 
     if (STORAGE === 'supabase') {
-        await Playstyle.insertNominationClose(SUPABASE_URL, SUPABASE_KEY, sessionId, confirmed);
+        try {
+            await Playstyle.insertNominationClose(SUPABASE_URL, SUPABASE_KEY, sessionId, confirmedForDb);
+        } catch (e) {
+            alert('Ошибка записи в БД: ' + e.message);
+            return;
+        }
     }
 
     session.nomination.status = 'closed';
     session.nomination.confirmed = confirmed;
+    session.nomination.gameTag = gameTag || null;
     session.nomination.ballotCount = ballots.length;
     session.nomination.closedAt = new Date().toISOString();
 
@@ -2266,6 +2325,22 @@ async function adminCloseNomination(sessionId) {
         alert(e.message);
     }
 }
+
+setInterval(() => {
+    document.querySelectorAll('.vote-countdown[data-closes]').forEach(el => {
+        const msLeft = new Date(el.dataset.closes) - Date.now();
+        if (msLeft <= 0) {
+            el.className = 'vote-countdown expiring';
+            el.textContent = '⏳ Время истекло — голосование можно закрыть вручную';
+            el.removeAttribute('data-closes');
+        } else {
+            const h = Math.floor(msLeft / 3600000);
+            const m = Math.floor((msLeft % 3600000) / 60000);
+            el.className = msLeft < 3 * 3600000 ? 'vote-countdown expiring' : 'vote-countdown';
+            el.textContent = `⏳ Истекает через: ${h}ч ${m}м`;
+        }
+    });
+}, 60000);
 
 const APP_LOAD_VERSION = '2026-06-03-load-v2';
 console.info('[архив] версия загрузчика:', APP_LOAD_VERSION);
