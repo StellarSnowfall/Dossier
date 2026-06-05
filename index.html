@@ -290,13 +290,13 @@ canvas {display:block; margin-top: 10px;}
 .ach-img-placeholder {
     font-size: 28px; color: #334155;
 }
-.ach-card.earned .ach-img-wrap { border-width: 2px; }
-.ach-rarity-white  .ach-img-wrap { border-color: #cbd5e1; box-shadow: 0 0 10px rgba(203,213,225,0.35); }
-.ach-rarity-green  .ach-img-wrap { border-color: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.4); }
-.ach-rarity-blue   .ach-img-wrap { border-color: #3b82f6; box-shadow: 0 0 10px rgba(59,130,246,0.45); }
-.ach-rarity-purple .ach-img-wrap { border-color: #a855f7; box-shadow: 0 0 10px rgba(168,85,247,0.45); }
-.ach-rarity-red    .ach-img-wrap { border-color: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.5); }
-.ach-rarity-gold   .ach-img-wrap { border-color: #f59e0b; box-shadow: 0 0 14px rgba(245,158,11,0.6); animation: ach-gold-pulse 2.5s ease-in-out infinite; }
+.ach-card.earned .ach-img-wrap { border-width: 3px; }
+.ach-rarity-white  .ach-img-wrap { border-color: #cbd5e1; box-shadow: 0 0 12px rgba(203,213,225,0.5); }
+.ach-rarity-green  .ach-img-wrap { border-color: #22c55e; box-shadow: 0 0 14px rgba(34,197,94,0.6); }
+.ach-rarity-blue   .ach-img-wrap { border-color: #3b82f6; box-shadow: 0 0 14px rgba(59,130,246,0.65); }
+.ach-rarity-purple .ach-img-wrap { border-color: #a855f7; box-shadow: 0 0 14px rgba(168,85,247,0.65); }
+.ach-rarity-red    .ach-img-wrap { border-color: #ef4444; box-shadow: 0 0 16px rgba(239,68,68,0.7); }
+.ach-rarity-gold   .ach-img-wrap { border-color: #f59e0b; box-shadow: 0 0 20px rgba(245,158,11,0.8); animation: ach-gold-pulse 2.5s ease-in-out infinite; }
 @keyframes ach-gold-pulse { 0%,100%{box-shadow:0 0 10px rgba(245,158,11,0.5)} 50%{box-shadow:0 0 22px rgba(245,158,11,0.9)} }
 .ach-name {
     font-size: 10px; text-align: center; color: #94a3b8; line-height: 1.3;
@@ -874,7 +874,8 @@ function loadChar(i) {
 
   const sessions = (ARCHIVE && ARCHIVE.sessions) ? ARCHIVE.sessions : [];
   window._archiveSessions = sessions;
-  document.getElementById("tab-regalia-content").innerHTML = renderRegalia(c, sessions);
+  window._currentCharName = c.name;
+  document.getElementById("tab-regalia-content").innerHTML = renderRegalia(c.name, sessions);
 }
 
 function switchTab(tab, btn) {
@@ -986,9 +987,11 @@ function getAchRarity(ach, count) {
 
 let _achModalData = null;
 
-function openAchModal(id, charName, regalia, sessions) {
+function openAchModal(id, charName) {
   const ach = ACHIEVEMENTS.find(a => a.id === id);
   if (!ach) return;
+  const regalia = getRegaliaForChar(charName);
+  const sessions = window._archiveSessions || [];
   const count = getAchCount(ach, charName, regalia, sessions);
   const rarity = getAchRarity(ach, count) || (ach.type === 'unique' ? ach.rarity : ach.rarities[0]);
   const rm = RARITY_META[rarity] || RARITY_META.white;
@@ -1018,9 +1021,13 @@ function closeAchModal() {
   document.getElementById('ach-modal-overlay').classList.add('hidden');
 }
 
-function renderRegalia(charObj, sessions) {
-  const regalia = charObj.regalia || {};
-  const earned = ACHIEVEMENTS.filter(a => getAchCount(a, charObj.name, regalia, sessions) > 0);
+function getRegaliaForChar(charName) {
+  return (ARCHIVE && ARCHIVE.regalia && ARCHIVE.regalia[charName]) || {};
+}
+
+function renderRegalia(charName, sessions) {
+  const regalia = getRegaliaForChar(charName);
+  const earned = ACHIEVEMENTS.filter(a => getAchCount(a, charName, regalia, sessions) > 0);
   const total = ACHIEVEMENTS.length;
   const earnedCount = earned.length;
 
@@ -1028,7 +1035,7 @@ function renderRegalia(charObj, sessions) {
   const progressive = ACHIEVEMENTS.filter(a => a.type === 'progressive');
 
   function cardHtml(ach) {
-    const count = getAchCount(ach, charObj.name, regalia, sessions);
+    const count = getAchCount(ach, charName, regalia, sessions);
     const isEarned = count > 0;
     const rarity = isEarned ? getAchRarity(ach, count) : (ach.type==='unique' ? ach.rarity : ach.rarities[0]);
     const rm = RARITY_META[rarity] || RARITY_META.white;
@@ -1039,7 +1046,7 @@ function renderRegalia(charObj, sessions) {
     const imgInner = ach.img
       ? `<img src="${ach.img}" alt="${ach.label}">`
       : `<div class="ach-img-placeholder">🏆</div>`;
-    return `<div class="ach-card ${earnedClass} ${rarityClass}" onclick="openAchModal('${ach.id}','${charObj.name}',${JSON.stringify(regalia)},window._archiveSessions||[])">
+    return `<div class="ach-card ${earnedClass} ${rarityClass}" onclick="openAchModal('${ach.id}','${charName}')">
       <div class="ach-img-wrap ${lockedClass}">
         ${imgInner}
         ${countBadge}
