@@ -307,6 +307,7 @@ a { color: #a78bfa; text-decoration: none; }
         <div class="mmr-grid" id="mmr-output"></div>
         <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
             <button type="button" class="nav-btn admin-only" onclick="openMmrAdminModal()">⚙ Рейтинг MMR</button>
+            <button type="button" class="nav-btn admin-only" onclick="openRegaliaModal()">🏆 Достижения</button>
         </div>
     </section>
 
@@ -515,6 +516,22 @@ a { color: #a78bfa; text-decoration: none; }
     </div>
 </div>
 
+<!-- Modal: regalia admin -->
+<div id="regalia-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeRegaliaModal()">
+    <div class="modal" style="max-width:560px;">
+        <h3>🏆 Управление достижениями</h3>
+        <div class="field">
+            <label class="stamp">Игрок</label>
+            <select id="regalia-player-sel" class="form-select" style="width:100%" onchange="renderRegaliaAdminRows()"></select>
+        </div>
+        <div id="regalia-admin-rows" style="max-height:400px;overflow-y:auto;margin-top:8px;"></div>
+        <div class="modal-actions" style="margin-top:16px;">
+            <button type="button" class="btn-action secondary" onclick="closeRegaliaModal()">Отмена</button>
+            <button type="button" class="btn-action" onclick="saveRegaliaAdmin()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="playstyle.js"></script>
 <script>
@@ -592,7 +609,8 @@ const DEFAULT_STATE = {
         kCalibration: 64,
         ratings: {}
     },
-    playstyle: { version: 1, players: {} }
+    playstyle: { version: 1, players: {} },
+    regalia: {}
 };
 
 let STATE = structuredClone(DEFAULT_STATE);
@@ -606,6 +624,18 @@ function setSyncStatus(ok, text) {
     txt.textContent = text;
 }
 
+function mergeDefaultPlayers(loaded) {
+    // Добавить игроков из DEFAULT_STATE, которых нет в загруженном списке
+    const set = new Set(loaded);
+    DEFAULT_STATE.players.forEach(p => { if (!set.has(p)) loaded.push(p); });
+}
+
+function mergeDefaultGames(loaded) {
+    // Добавить игры из DEFAULT_STATE, которых нет в загруженном списке
+    const names = new Set(loaded.map(g => g.name));
+    DEFAULT_STATE.games.forEach(g => { if (!names.has(g.name)) loaded.push({ ...g }); });
+}
+
 function normalizeLoaded(raw) {
     if (Array.isArray(raw)) {
         const state = { ...structuredClone(DEFAULT_STATE), sessions: raw };
@@ -615,9 +645,13 @@ function normalizeLoaded(raw) {
         return state;
     }
     if (raw && Array.isArray(raw.sessions)) {
+        const players = raw.players?.length ? [...raw.players] : [...DEFAULT_STATE.players];
+        mergeDefaultPlayers(players);
+        const games = raw.games?.length ? [...raw.games] : [...DEFAULT_STATE.games.map(g => ({ ...g }))];
+        mergeDefaultGames(games);
         const state = {
-            players: raw.players?.length ? raw.players : DEFAULT_STATE.players,
-            games: raw.games?.length ? raw.games : DEFAULT_STATE.games,
+            players,
+            games,
             sessions: raw.sessions,
             mmr: {
                 ...structuredClone(DEFAULT_STATE.mmr),
@@ -628,7 +662,8 @@ function normalizeLoaded(raw) {
                 ...structuredClone(DEFAULT_STATE.playstyle),
                 ...(raw.playstyle || {}),
                 players: { ...(raw.playstyle?.players || {}) }
-            }
+            },
+            regalia: { ...(raw.regalia || {}) }
         };
         mergeGamesMmrType(state.games);
         ensureMmrState(state);
@@ -2118,6 +2153,105 @@ function renderNominationBlock(s) {
     }
     html += '</div></div>';
     return html;
+}
+
+// ── Достижения (для admin-модала) ──
+const ACHIEVEMENTS_ADMIN = [
+  { id:'kraken',    label:'Кракен доволен',         type:'progressive', game:'Накорми Кракена', auto:true },
+  { id:'jump',      label:'Лучше прыгну сам',        type:'progressive', game:'Накорми Кракена', auto:false },
+  { id:'legion',    label:'Имя мне — легион',        type:'progressive', game:'Судный день',     auto:true },
+  { id:'fallen',    label:'Марш Павших',             type:'unique',      game:'Судный день',     auto:true },
+  { id:'immortal',  label:'Бессмертный',             type:'unique',      game:'Судный день',     auto:false },
+  { id:'portals',   label:'Терпеть не могу порталы', type:'unique',      game:'Судный день',     auto:false },
+  { id:'survivor',  label:'Выживший',                type:'unique',      game:'Судный день',     auto:false },
+  { id:'outcast',   label:'Изгой',                   type:'progressive', game:'Судный день',     auto:true },
+  { id:'chimera',   label:'Химера',                  type:'unique',      game:'Судный день',     auto:false },
+  { id:'own',       label:'Я СВОЙ!',                 type:'unique',      game:'Общее',           auto:false },
+  { id:'lastchance',label:'Последний Шанс',          type:'unique',      game:'Письма Призрака', auto:false },
+  { id:'leader',    label:'Предводитель',            type:'progressive', game:'Судный день',     auto:false },
+  { id:'david',     label:'Давид против Голиафа',    type:'progressive', game:'Перудо',          auto:false },
+  { id:'perfect',   label:'Идеальная игра',          type:'unique',      game:'Перудо',          auto:false },
+  { id:'unluck',    label:'Анлак',                   type:'progressive', game:'Общее',           auto:true },
+  { id:'fragile',   label:'Хрупкий рассудок',        type:'progressive', game:'Общее',           auto:false },
+];
+
+function openRegaliaModal() {
+    try { requireAdmin(); } catch { return; }
+    const sel = document.getElementById('regalia-player-sel');
+    sel.innerHTML = STATE.players.map(p => `<option value="${p}">${p}</option>`).join('');
+    sel.value = STATE.players[0] || '';
+    renderRegaliaAdminRows();
+    document.getElementById('regalia-modal').classList.remove('hidden');
+}
+
+function closeRegaliaModal() {
+    document.getElementById('regalia-modal').classList.add('hidden');
+}
+
+function computeAutoCount(achId, playerName) {
+    const ss = STATE.sessions;
+    if (achId === 'kraken')  return ss.filter(s=>s.game==='Накорми Кракена'&&(s.roles||[]).some(r=>r.player===playerName&&r.role==='Ктулху'&&r.won)).length;
+    if (achId === 'legion')  return ss.filter(s=>s.game==='Судный день'&&(s.roles||[]).some(r=>r.player===playerName&&r.role==='Легион'&&r.won)).length;
+    if (achId === 'fallen')  return Math.min(1,ss.filter(s=>s.game==='Судный день'&&(s.roles||[]).some(r=>r.player===playerName&&r.role==='Павший'&&r.won)).length);
+    if (achId === 'outcast') return ss.filter(s=>s.game==='Судный день'&&(s.roles||[]).some(r=>r.player===playerName&&r.role==='Изгой'&&r.won)).length;
+    if (achId === 'unluck')  {
+        if (playerName === 'Дияр') return 0;
+        return ss.filter(s=>{const pr=(s.roles||[]).find(r=>r.player===playerName);const dr=(s.roles||[]).find(r=>r.player==='Дияр');return pr&&!pr.won&&dr&&dr.won;}).length;
+    }
+    return 0;
+}
+
+function renderRegaliaAdminRows() {
+    const player = document.getElementById('regalia-player-sel').value;
+    const regalia = STATE.regalia?.[player] || {};
+    const root = document.getElementById('regalia-admin-rows');
+
+    root.innerHTML = ACHIEVEMENTS_ADMIN.map(a => {
+        const autoCount = a.auto ? computeAutoCount(a.id, player) : null;
+        const manualCount = regalia[a.id] || 0;
+        const displayCount = a.auto ? autoCount : manualCount;
+        const typeTag = a.type === 'progressive' ? '↑' : '★';
+        const autoNote = a.auto ? `<span style="font-size:10px;color:#475569;margin-left:4px">(авто: ${autoCount})</span>` : '';
+        const inputField = a.auto
+            ? `<span style="font-family:monospace;font-size:14px;font-weight:700;color:#f8fafc;padding:0 8px;">${autoCount}</span>`
+            : `<div style="display:flex;align-items:center;gap:6px;">
+                <button type="button" onclick="adjustRegalia('${a.id}','${player}',-1)" style="width:28px;height:28px;background:#1e293b;border:1px solid #2d2d4e;border-radius:6px;color:#e2e8f0;cursor:pointer;font-size:16px;line-height:1;">−</button>
+                <span id="rcount-${a.id}" style="font-family:monospace;font-size:14px;font-weight:700;color:#f8fafc;min-width:28px;text-align:center;">${manualCount}</span>
+                <button type="button" onclick="adjustRegalia('${a.id}','${player}',1)" style="width:28px;height:28px;background:#1e293b;border:1px solid #2d2d4e;border-radius:6px;color:#e2e8f0;cursor:pointer;font-size:16px;line-height:1;">+</button>
+               </div>`;
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid #1e293b;gap:8px;">
+            <div style="flex:1;min-width:0;">
+                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">${typeTag} ${escapeHtml(a.label)}</span>
+                <span style="font-size:11px;color:#475569;margin-left:6px;">${a.game}</span>
+                ${autoNote}
+            </div>
+            ${inputField}
+        </div>`;
+    }).join('');
+}
+
+function adjustRegalia(achId, player, delta) {
+    if (!STATE.regalia) STATE.regalia = {};
+    if (!STATE.regalia[player]) STATE.regalia[player] = {};
+    const cur = STATE.regalia[player][achId] || 0;
+    const next = Math.max(0, cur + delta);
+    if (next === 0) {
+        delete STATE.regalia[player][achId];
+    } else {
+        STATE.regalia[player][achId] = next;
+    }
+    const el = document.getElementById(`rcount-${achId}`);
+    if (el) el.textContent = next;
+}
+
+async function saveRegaliaAdmin() {
+    try {
+        await pushToCloud();
+        closeRegaliaModal();
+        alert('Достижения сохранены.');
+    } catch (e) {
+        alert('Ошибка сохранения: ' + e.message);
+    }
 }
 
 function escapeHtml(str) {
