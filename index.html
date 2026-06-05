@@ -1289,7 +1289,7 @@ function normalizeArchive(raw) {
     players: { ...(payload.playstyle?.players || {}) }
   };
 
-  return { players, games, sessions: payload.sessions, mmr, playstyle };
+  return { players, games, sessions: payload.sessions, mmr, playstyle, regalia: payload.regalia || {} };
 }
 
 function isSessionMmrEligible(session) {
