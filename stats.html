@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Статистика — Игровой архив</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -218,6 +218,9 @@ a { color: #a78bfa; text-decoration: none; }
     font-size: 11px; padding: 4px 10px; border-radius: 999px;
     background: rgba(124,58,237,0.15); border: 1px solid #4c1d95; color: #e9d5ff;
 }
+.nomination-log { margin-top: 8px; }
+.nomination-log-title { font-size: 11px; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; }
+.nomination-empty { font-size: 12px; color: #64748b; font-style: italic; }
 .game-tag-line { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
 .game-tag-badge {
     font-size: 11px; padding: 3px 9px; border-radius: 4px;
@@ -1127,10 +1130,13 @@ function expectedScore(ratingA, ratingB) {
     return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
 
+const MMR_WIN_MULT = 2.5;
+const MMR_LOSS_MULT = 0.3;
+
 function applyEloPair(winnerRating, loserRating, k) {
     const e = expectedScore(winnerRating, loserRating);
     const delta = k * (1 - e);
-    return { winDelta: delta, loseDelta: -delta };
+    return { winDelta: delta * MMR_WIN_MULT, loseDelta: -delta * MMR_LOSS_MULT };
 }
 
 function trackedRoles(session) {
@@ -1304,14 +1310,12 @@ function getMmrLeaderboardRanks() {
     return rankMap;
 }
 
-function getMmrBadgeSrc(mmr, leaderboardRank) {
-    if (mmr === null) return null;
-    if (leaderboardRank === 1) return MMR_IMG + 'Titan-Top1.png';
-    if (leaderboardRank >= 2 && leaderboardRank <= 10) return MMR_IMG + 'Titan-Top.png';
+function getMmrBadgeSrc(mmr) {
+    if (mmr === null || mmr === undefined) return null;
+    if (mmr >= 4000) return MMR_IMG + 'Titan-default.png';
 
     const info = getTierInfo(mmr);
     if (!info) return null;
-    if (mmr >= 4000) return MMR_IMG + 'Titan-default.png';
 
     const file = info.prefix === 'recruit'
         ? `recruit-${info.star}star.png`
@@ -1349,7 +1353,6 @@ function renderMmrLeaderboard() {
     const cal = cfg.calibrationGames;
     meta.textContent = `Калибровка: ${cal} игр · с ${cfg.startedAt || '—'}`;
 
-    const rankMap = getMmrLeaderboardRanks();
     const rows = STATE.players.map(name => {
         const r = cfg.ratings[name];
         const display = getDisplayMmr(name);
@@ -1368,8 +1371,7 @@ function renderMmrLeaderboard() {
         const isCalibrating = display === null;
         card.className = 'mmr-card' + (isCalibrating ? ' calibrating' : '');
 
-        const lbRank = rankMap.get(name);
-        const badgeSrc = isCalibrating ? null : getMmrBadgeSrc(display, lbRank);
+        const badgeSrc = isCalibrating ? null : getMmrBadgeSrc(display);
         const tierInfo = isCalibrating ? null : getTierInfo(display);
         const lastDelta = getLastMmrDelta(name);
 
@@ -2129,10 +2131,17 @@ function renderNominationBlock(s) {
         <div class="nomination-status ${isOpen ? 'open' : 'closed'}">${statusText}</div>
         ${countdownHtml}`;
 
-    if (n.confirmed?.length) {
-        html += '<div class="nomination-badges">' + n.confirmed.map(c =>
-            `<span class="nomination-badge" title="${c.votes} из ${total} участников">${escapeHtml(c.player)}: ${escapeHtml(c.label)}</span>`
-        ).join('') + '</div>';
+    if (!isOpen) {
+        html += '<div class="nomination-log"><div class="nomination-log-title">Лог номинаций</div>';
+        const confirmed = (n.confirmed || []).filter(c => c && c._type !== 'gametag' && c.player && c.player !== '__tag');
+        if (confirmed.length) {
+            html += '<div class="nomination-badges">' + confirmed.map(c =>
+                `<span class="nomination-badge" title="${c.votes || '—'} из ${total} участников">${escapeHtml(c.player)}: ${escapeHtml(c.label || c.category || '')}</span>`
+            ).join('') + '</div>';
+        } else {
+            html += '<div class="nomination-empty">Никто не был утверждён — номинации не набрали нужное число жетонов.</div>';
+        }
+        html += '</div>';
     }
 
     if (n.gameTag) {
@@ -2396,7 +2405,13 @@ async function submitVoteModal() {
         const ok = document.getElementById('vote-success');
         ok.style.display = 'block';
         if (result.closed) {
-            ok.textContent = 'Спасибо! Все проголосовали — итоги стола утверждены.';
+            const confirmed = (result.confirmed || []).filter(c => c && c._type !== 'gametag');
+            if (confirmed.length) {
+                const names = confirmed.map(c => `${c.player} — ${c.label}`).join('; ');
+                ok.textContent = `Голосование закрыто. Утверждены: ${names}.`;
+            } else {
+                ok.textContent = 'Голосование закрыто. Никто не был утверждён на номинацию.';
+            }
             if (isAdmin()) {
                 try { await pushToCloud(); } catch (e) { console.warn(e); }
             } else {
@@ -2455,6 +2470,10 @@ async function adminCloseNomination(sessionId) {
     try {
         await pushToCloud();
         await refreshAll();
+        const names = confirmed.map(c => `${c.player} — ${c.label}`).join('; ');
+        alert(confirmed.length
+            ? `Голосование закрыто. Утверждены: ${names}.`
+            : 'Голосование закрыто. Никто не был утверждён на номинацию.');
     } catch (e) {
         alert(e.message);
     }
