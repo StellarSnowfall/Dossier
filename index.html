@@ -1307,10 +1307,13 @@ function expectedScore(ratingA, ratingB) {
   return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
 }
 
+const MMR_WIN_MULT = 2.5;
+const MMR_LOSS_MULT = 0.3;
+
 function applyEloPair(winnerRating, loserRating, k) {
   const e = expectedScore(winnerRating, loserRating);
   const delta = k * (1 - e);
-  return { winDelta: delta, loseDelta: -delta };
+  return { winDelta: delta * MMR_WIN_MULT, loseDelta: -delta * MMR_LOSS_MULT };
 }
 
 function trackedRoles(session) {
@@ -1439,9 +1442,8 @@ function getMmrLeaderboardRanks() {
   return rankMap;
 }
 
-function getMmrBadgeSrc(mmr, leaderboardRank) {
-  if (leaderboardRank === 1) return MMR_IMG + 'Titan-Top1.png';
-  if (leaderboardRank >= 2 && leaderboardRank <= 10) return MMR_IMG + 'Titan-Top.png';
+function getMmrBadgeSrc(mmr) {
+  if (mmr === null || mmr === undefined) return null;
   if (mmr >= 4000) return MMR_IMG + 'Titan-default.png';
 
   let tierIdx = 0;
@@ -1482,8 +1484,7 @@ function updateMmrBadge(playerName) {
     return;
   }
 
-  const rank = getMmrLeaderboardRanks().get(playerName);
-  img.src = getMmrBadgeSrc(display, rank);
+  img.src = getMmrBadgeSrc(display);
   img.alt = `${display} MMR`;
   label.textContent = `${display} MMR`;
 }
